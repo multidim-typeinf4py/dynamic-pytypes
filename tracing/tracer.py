@@ -139,7 +139,7 @@ class Tracer(TracerBase):
         proj_path: pathlib.Path,
         stdlib_path: pathlib.Path,
         venv_path: pathlib.Path,
-        apply_opts: bool=True,
+        apply_opts: bool=False,
     ):
         """
         Construct instance with provided paths.
@@ -170,9 +170,9 @@ class Tracer(TracerBase):
         while self.optimisation_stack:
             top = self.optimisation_stack[-1]
             if top.status() == TriggerStatus.EXITED:
-                logger.debug(
-                    f"Removing {self.optimisation_stack[-1].__class__.__name__} from optimisations"
-                )
+                #logger.debug(
+                #    f"Removing {self.optimisation_stack[-1].__class__.__name__} from optimisations"
+                #)
                 self.optimisation_stack.pop()
             else:
                 break
@@ -183,9 +183,9 @@ class Tracer(TracerBase):
             self.optimisation_stack[-1], TypeStableLoop
         ):
             if fwm.is_for_loop():
-                logger.debug(
-                    f"Applying TypeStableLoop for {inspect.getframeinfo(fwm._frame)}"
-                )
+                #logger.debug(
+                #    f"Applying TypeStableLoop for {inspect.getframeinfo(fwm._frame)}"
+                #)
                 tsl = TypeStableLoop(fwm)
                 if not self.optimisation_stack or tsl != self.optimisation_stack[-1]:
                     self.optimisation_stack.append(tsl)
@@ -304,7 +304,7 @@ class Tracer(TracerBase):
         )
 
         if event == "call":
-            logger.info(f"Tracing call: {frameinfo}")
+            #logger.info(f"Tracing call: {frameinfo}")
 
             # Add to storage
             self.old_local_vars[function_name] = dict()
@@ -314,7 +314,7 @@ class Tracer(TracerBase):
             batch = self._on_call(frame, batch)
 
         elif event == "return":
-            logger.info(f"Tracing return: {frameinfo}")
+            #logger.info(f"Tracing return: {frameinfo}")
 
             # Catch locals and globals that are changed on last line
             line_number = self._prev_line[-1]
@@ -333,7 +333,7 @@ class Tracer(TracerBase):
 
         elif event == "line":
             line_number, self._prev_line[-1] = self._prev_line[-1], line_number
-            logger.info(f"Tracing line: {frameinfo}")
+            #logger.info(f"Tracing line: {frameinfo}")
             batch = self._on_line(frame, line_number, batch)
 
         self._update_trace_data_with(batch)

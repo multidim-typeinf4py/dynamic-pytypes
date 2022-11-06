@@ -113,7 +113,7 @@ def test_pathlib_calls_are_not_traced():
         None,
         "call_to_standard_library",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "call_to_standard_library",
         None,
         "int",

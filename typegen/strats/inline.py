@@ -232,7 +232,7 @@ class TypeHintTransformer(cst.CSTTransformer):
         param_name = node.name.value
 
         param_masks = [
-            self.df[Column.CATEGORY] == TraceDataCategory.FUNCTION_PARAMETER,
+            self.df[Column.CATEGORY] == TraceDataCategory.CALLABLE_PARAMETER,
             self.df[Column.FUNCNAME] == fdef.name.value,
             self.df[Column.LINENO] == pos.line,
             self.df[Column.VARNAME] == param_name,
@@ -255,7 +255,7 @@ class TypeHintTransformer(cst.CSTTransformer):
             class_module_mask,
             clazz_mask,
             self.df[Column.LINENO] == 0,  # return type, always stored at line 0
-            self.df[Column.CATEGORY] == TraceDataCategory.FUNCTION_RETURN,
+            self.df[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN,
             self.df[Column.VARNAME] == node.name.value,
         ]
         rettypes = self.df[functools.reduce(operator.and_, rettype_masks)]
