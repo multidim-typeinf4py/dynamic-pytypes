@@ -66,9 +66,6 @@ class TraceUpdate:
     names2types: dict[str, tuple[str | None, str]]
 
 
-TRACE_MAP = dict[str, tuple[str | None, str]]
-
-
 @dataclass
 class TraceBatch:
     """
@@ -78,7 +75,7 @@ class TraceBatch:
     The constructor accepts values that are used by default to create instances of `TraceUpdate`,
     unless overwritten by an argument in one of the builder methods.
 
-    TRACE_MAP is defined as `dict[str, tuple[str | None, str]]`, which is a map of identifiers to (module name, type name).
+    `dict[str, tuple[str | None, str]]` is a map of identifiers to (module name, type name).
     The module_name is None if the type is builtin, such as int, str, float etc.
 
     :params file_name: The file name in which the variables are declared
@@ -99,7 +96,7 @@ class TraceBatch:
     def local_variables(
         self,
         line_number: int,
-        names2types: TRACE_MAP,
+        names2types: dict[str, tuple[str | None, str]],
         override: TraceUpdateOverride | None = None,
     ) -> TraceBatch:
         """
@@ -129,7 +126,7 @@ class TraceBatch:
 
     def global_variables(
         self,
-        names2types: TRACE_MAP,
+        names2types: dict[str, tuple[str | None, str]],
         override: TraceUpdateOverride | None = None,
     ) -> TraceBatch:
         """
@@ -156,7 +153,7 @@ class TraceBatch:
 
     def returns(
         self,
-        names2types: TRACE_MAP,
+        names2types: dict[str, tuple[str | None, str]],
         override: TraceUpdateOverride | None = None,
     ) -> TraceBatch:
         """
@@ -181,7 +178,7 @@ class TraceBatch:
 
     def parameters(
         self,
-        names2types: TRACE_MAP,
+        names2types: dict[str, tuple[str | None, str]],
         override: TraceUpdateOverride | None = None,
     ) -> TraceBatch:
         """
@@ -205,7 +202,7 @@ class TraceBatch:
 
     def members(
         self,
-        names2types: TRACE_MAP,
+        names2types: dict[str, tuple[str | None, str]],
         override: TraceUpdateOverride | None = None,
     ) -> TraceBatch:
         """
@@ -268,7 +265,7 @@ class TraceBatch:
 
     def _build_update(
         self,
-        names2types: TRACE_MAP,
+        names2types: dict[str, tuple[str | None, str]],
         category: TraceDataCategory,
         override: TraceUpdateOverride,
     ) -> TraceUpdate | None:
@@ -280,7 +277,9 @@ class TraceBatch:
             class_module=override.class_module or self.class_module,
             class_name=override.class_name or self.class_name,
             function_name=override.function_name or self.function_name,
-            line_number=override.line_number if override.line_number is not None else self.line_number,
+            line_number=override.line_number
+            if override.line_number is not None
+            else self.line_number,
             category=category,
             names2types=names2types,
         )

@@ -220,8 +220,8 @@ def get_test_data_callables():
 
     sample_trace_data.loc[len(sample_trace_data.index)] = [
         str(resource_path),
-        c_clazz_module,
-        c_clazz,
+        None,
+        None,
         "inner",
         16,
         TraceDataCategory.CALLABLE_PARAMETER,
@@ -711,8 +711,8 @@ def get_test_data_existing_type_hints():
     ]
     sample_trace_data.loc[len(sample_trace_data.index)] = [
         str(resource_path),
-        class_module,
-        class_name,
+        None,
+        None,
         "function",
         11,
         TraceDataCategory.CALLABLE_PARAMETER,

@@ -1,3 +1,4 @@
+import difflib
 import libcst as cst
 import pathlib
 from typegen.strats.gen import TypeHintGenerator
@@ -19,28 +20,33 @@ def test_factory():
 
 
 def test_inline_generator_generates_expected_content(get_test_data):
-    for test_element in get_test_data:
-        resource_path = test_element[0]
-        sample_trace_data = test_element[1]
-        expected_eval_inline_content = test_element[3]
+    for (
+        resource_path,
+        sample_trace_data,
+        _,
+        expected_eval_inline_content,
+        *_
+    ) in get_test_data:
         assert resource_path.is_file()
 
         print(f"Working on {resource_path}")
 
-        gen = TypeHintGenerator(ident=EvaluationInlineGenerator.ident, types=pd.DataFrame())
+        gen = TypeHintGenerator(
+            ident=EvaluationInlineGenerator.ident, types=pd.DataFrame()
+        )
         hinted = gen._gen_hinted_ast(
             applicable=sample_trace_data, module=load_cst_module(resource_path)
         )
         actual_file_content = hinted.code
         if actual_file_content != expected_eval_inline_content:
             print(f"Test failed for: {str(resource_path)}")
-            print("Expected generated code: ")
-            print("---")
-            print(expected_eval_inline_content)
-            print("---")
-            print("Actual generated code: ")
-            print("---")
-            print(actual_file_content)
-            print("---")
-            assert False
 
+            diff = "".join(
+                difflib.unified_diff(
+                    expected_eval_inline_content.splitlines(1),
+                    actual_file_content.splitlines(1),
+                )
+            )
+            print(f"Diff: {diff}")
+
+            assert False

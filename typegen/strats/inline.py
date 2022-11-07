@@ -4,12 +4,12 @@ import itertools
 import logging
 import operator
 import pathlib
-from typing import NoReturn
+from typing import Iterator, NoReturn
 import typing
 
 import pandas as pd
 import libcst as cst
-from libcst.metadata import PositionProvider
+import libcst.metadata as metadata
 
 from constants import Column
 from common import TraceDataCategory
@@ -59,7 +59,7 @@ def _create_annotation_from_vartype(vartype: str) -> cst.Annotation:
 class TypeHintTransformer(cst.CSTTransformer):
     """Transforms the CST by adding the traced type hints without modifying the original type hints."""
 
-    METADATA_DEPENDENCIES = (PositionProvider,)
+    METADATA_DEPENDENCIES = (metadata.PositionProvider, metadata.ScopeProvider)
 
     def __init__(self, module: str, relevant: pd.DataFrame) -> None:
         super().__init__()
@@ -80,6 +80,16 @@ class TypeHintTransformer(cst.CSTTransformer):
 
     def _is_global_scope(self) -> bool:
         return len(self._scope_stack) == 0
+
+    def _all_scopes_of(self, node: cst.CSTNode) -> Iterator[cst.CSTNode]:
+        yield (scope := self.get_metadata(metadata.ScopeProvider, node).parent)
+        
+        match scope:
+            case metadata.ClassScope(node=p) | metadata.FunctionScope(node=p):
+                yield from self._all_scopes_of(p)
+            case _:
+                yield None
+                return
 
     def _innermost_class(self) -> cst.ClassDef | None:
         fromtop = reversed(self._scope_stack)
@@ -168,7 +178,7 @@ class TypeHintTransformer(cst.CSTTransformer):
             # (i.e. no stdlib, no venv etc.), so this check is safe
             class_module_mask = self.df[Column.CLASS_MODULE] == self._module
 
-        pos = self.get_metadata(PositionProvider, node).start
+        pos = self.get_metadata(metadata.PositionProvider, node).start
 
         local_var_mask = [
             class_module_mask,
@@ -228,14 +238,22 @@ class TypeHintTransformer(cst.CSTTransformer):
             fdef is not None
         ), f"param {node.name.value} has not been associated with a function"
 
-        pos = self.get_metadata(PositionProvider, node).start
-        param_name = node.name.value
+        scopes = self._all_scopes_of(node)
+        if any(isinstance(s := scope, metadata.ClassScope) for scope in scopes):
+            logger.debug(f"Searching for {node.name} in {s.name}")
+            clazz_mask = self.df[Column.CLASS] == s.name
+            class_module_mask = self.df[Column.CLASS_MODULE] == self._module
+        else:
+            logger.debug(f"Searching for {node.name} outside of class scope")
+            clazz_mask = self.df[Column.CLASS].isnull()
+            class_module_mask = self.df[Column.CLASS_MODULE].isnull()
 
         param_masks = [
+            clazz_mask,
+            class_module_mask,
             self.df[Column.CATEGORY] == TraceDataCategory.CALLABLE_PARAMETER,
             self.df[Column.FUNCNAME] == fdef.name.value,
-            self.df[Column.LINENO] == pos.line,
-            self.df[Column.VARNAME] == param_name,
+            self.df[Column.VARNAME] == node.name.value,
         ]
         params = self.df[functools.reduce(operator.and_, param_masks)]
         return params
@@ -262,26 +280,26 @@ class TypeHintTransformer(cst.CSTTransformer):
         return rettypes
 
     def visit_ClassDef(self, cdef: cst.ClassDef) -> bool | None:
-        logger.debug(f"Entering class '{cdef.name.value}'")
+        logger.info(f"Entering class '{cdef.name.value}'")
 
         # Track ClassDefs to disambiguate functions from methods
         self._scope_stack.append(cdef)
         return True
 
     def leave_ClassDef(self, _: cst.ClassDef, updated: cst.ClassDef) -> cst.ClassDef:
-        logger.debug(f"Leaving class '{updated.name.value}'")
+        logger.info(f"Leaving class '{updated.name.value}'")
 
         self._scope_stack.pop()
         return updated
 
     def visit_FunctionDef(self, fdef: cst.FunctionDef) -> bool | None:
-        logger.debug(f"Entering function '{fdef.name.value}'")
+        logger.info(f"Entering function '{fdef.name.value}'")
         self._scope_stack.append(fdef)
         return True
 
     def visit_Global(self, node: cst.Global) -> bool | None:
         names = set(map(lambda n: n.name.value, node.names))
-        logger.debug(f"Registered global(s): '{names}'")
+        logger.info(f"Registered global(s): '{names}'")
 
         fdef = self._innermost_function()
         assert fdef is not None
@@ -293,15 +311,16 @@ class TypeHintTransformer(cst.CSTTransformer):
     def leave_FunctionDef(
         self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
     ) -> cst.FunctionDef:
-        logger.debug(f"Leaving FunctionDef '{original_node.name.value}'")
+        logger.info(f"Leaving FunctionDef '{original_node.name.value}'")
         self._scope_stack.pop()
 
         if original_node in self._globals_by_scope:
             del self._globals_by_scope[original_node]
 
         if updated_node.returns is not None:
-            logger.debug(
-                f"'{original_node.name.value}' already has an annotation, returning.")
+            logger.warning(
+                f"'{original_node.name.value}' already has an annotation, returning."
+            )
             return updated_node
 
         rettypes = self._get_trace_for_rettype(original_node)
@@ -315,13 +334,13 @@ class TypeHintTransformer(cst.CSTTransformer):
 
         # no type hint, skip
         if rettypes.empty:
-            logger.debug(f"No return type hint found for {original_node.name.value}")
+            logger.warning(f"No return type hint found for {original_node.name.value}")
             return updated_node
         else:
             rettype = rettypes[Column.VARTYPE].values[0]
             assert rettype is not None
 
-            logger.debug(
+            logger.info(
                 f"Applying return type hint '{rettype}' to '{original_node.name.value}'"
             )
             returns = _create_annotation_from_vartype(rettype)
@@ -340,20 +359,20 @@ class TypeHintTransformer(cst.CSTTransformer):
             )
 
         if updated_node.annotation is not None:
-            logger.debug(
+            logger.warning(
                 f"'{original_node.name.value}' already has an annotation, returning."
             )
             return updated_node
 
         # no type hint, skip
         if params.empty:
-            logger.debug(f"No hint found for parameter '{original_node.name.value}'")
+            logger.warning(f"No hint found for parameter '{original_node.name.value}'")
             return updated_node
 
         argtype = params[Column.VARTYPE].values[0]
         assert argtype is not None
 
-        logger.debug(
+        logger.info(
             f"Applying hint '{argtype}' to parameter '{original_node.name.value}'"
         )
         return updated_node.with_changes(
@@ -373,8 +392,9 @@ class TypeHintTransformer(cst.CSTTransformer):
                 global_vars, local_vars, class_members, ident, var
             )
             if hinted.empty:
-                logger.debug(f"No type hint stored for {ident} in AugAssign")
-                logger.debug("Not adding AnnAssign for AugAssign")
+                logger.warning(
+                    f"No type hint stored for {ident} in AugAssign; Not adding AnnAssign for AugAssign"
+                )
                 continue
             if hinted.shape[0] > 1:
                 self._on_multiple_hints_found(ident, hinted, original_node)
@@ -416,9 +436,9 @@ class TypeHintTransformer(cst.CSTTransformer):
                         "class members externally is forbidden"
                     )
                 else:
-                    logger.debug(f"Hint for '{ident}' could not be found")
+                    logger.warning(f"Hint for '{ident}' could not be found")
 
-                logger.debug("Not adding AnnAssign for Assign")
+                logger.warning("Not adding AnnAssign for Assign")
                 continue
 
             if hinted.shape[0] > 1:
@@ -427,7 +447,7 @@ class TypeHintTransformer(cst.CSTTransformer):
             hint_ty = hinted[Column.VARTYPE].values[0]
             assert hint_ty is not None
 
-            logger.debug(f"Found '{hint_ty}' for '{ident}'")
+            logger.info(f"Found '{hint_ty}' for '{ident}'")
             hinted_targets.append(
                 cst.AnnAssign(
                     target=var,
@@ -470,13 +490,13 @@ class TypeHintTransformer(cst.CSTTransformer):
             self._on_multiple_hints_found(ident, hinted, original_node)
 
         if hinted.empty and original_node.value is None:
-            logger.debug(
+            logger.info(
                 "Removing AnnAssign without value because no type hint can be provided"
             )
             return cst.RemoveFromParent()
 
         elif hinted.empty and original_node.value is not None:
-            logger.debug(
+            logger.info(
                 "Replacing AnnAssign with value by Assign without type hint because no type hint can be provided"
             )
             return cst.Assign(
@@ -488,7 +508,7 @@ class TypeHintTransformer(cst.CSTTransformer):
             hint_ty = hinted[Column.VARTYPE].values[0]
             assert hint_ty is not None
 
-            logger.debug(f"Using '{hint_ty}' for the AnnAssign with '{ident}'")
+            logger.info(f"Using '{hint_ty}' for the AnnAssign with '{ident}'")
 
             # Replace simple assignment with annotated assignment
             return updated_node.with_changes(
@@ -513,6 +533,7 @@ class TypeHintTransformer(cst.CSTTransformer):
 
 class InlineGenerator(TypeHintGenerator):
     """Overwrites the files by adding the traced type hints to the variables. Does not overwrite existing type hints."""
+
     ident = "inline"
 
     def _transformers(
