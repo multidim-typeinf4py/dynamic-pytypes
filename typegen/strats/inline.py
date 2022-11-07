@@ -4,7 +4,7 @@ import itertools
 import logging
 import operator
 import pathlib
-from typing import NoReturn
+from typing import Iterator, NoReturn
 import typing
 
 import pandas as pd
@@ -80,6 +80,16 @@ class TypeHintTransformer(cst.CSTTransformer):
 
     def _is_global_scope(self) -> bool:
         return len(self._scope_stack) == 0
+
+    def _all_scopes_of(self, node: cst.CSTNode) -> Iterator[cst.CSTNode]:
+        yield (scope := self.get_metadata(metadata.ScopeProvider, node).parent)
+        
+        match scope:
+            case metadata.ClassScope(node=p) | metadata.FunctionScope(node=p):
+                yield from self._all_scopes_of(p)
+            case _:
+                yield None
+                return
 
     def _innermost_class(self) -> cst.ClassDef | None:
         fromtop = reversed(self._scope_stack)
@@ -228,15 +238,15 @@ class TypeHintTransformer(cst.CSTTransformer):
             fdef is not None
         ), f"param {node.name.value} has not been associated with a function"
 
-        scope = self.get_metadata(metadata.ScopeProvider, node).parent
-        if isinstance(scope, metadata.ClassScope):
-            clazz_mask = self.df[Column.CLASS] == scope.name
+        scopes = self._all_scopes_of(node)
+        if any(isinstance(s := scope, metadata.ClassScope) for scope in scopes):
+            logger.debug(f"Searching for {node.name} in {s.name}")
+            clazz_mask = self.df[Column.CLASS] == s.name
             class_module_mask = self.df[Column.CLASS_MODULE] == self._module
-        elif isinstance(scope, metadata.GlobalScope):
+        else:
+            logger.debug(f"Searching for {node.name} outside of class scope")
             clazz_mask = self.df[Column.CLASS].isnull()
             class_module_mask = self.df[Column.CLASS_MODULE].isnull()
-        else:
-            assert False, f"Unhandled scope {scope}"
 
         param_masks = [
             clazz_mask,
