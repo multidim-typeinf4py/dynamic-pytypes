@@ -39,7 +39,7 @@ test_path = pathlib.Path("tests", "tracing", "optimisation", "test_loop.py")
 
 
 def test_all_variables_exist():
-    tracer = Tracer(proj_path, stdlib_path, venv_path)
+    tracer = Tracer(proj_path, stdlib_path, venv_path, apply_opts=True)
 
     tracer.start_trace()
     skippable_looping()
@@ -99,7 +99,7 @@ def test_all_variables_exist():
         None,
         "skippable_looping",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "skippable_looping",
         None,
         "int",
@@ -113,7 +113,7 @@ def test_all_variables_exist():
 
 
 def test_variable_is_not_traced():
-    tracer = Tracer(proj_path, stdlib_path, venv_path)
+    tracer = Tracer(proj_path, stdlib_path, venv_path, apply_opts=True)
 
     tracer.start_trace()
     skippable_looping_with_skipped_variable()
@@ -183,7 +183,7 @@ def test_variable_is_not_traced():
         None,
         "skippable_looping_with_skipped_variable",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "skippable_looping_with_skipped_variable",
         None,
         "int",

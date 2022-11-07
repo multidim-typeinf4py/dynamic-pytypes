@@ -2,10 +2,12 @@ import libcst as cst
 import pathlib
 from constants import Schema
 from common import TraceDataCategory
-from typegen import StubFileGenerator
+from typegen.strats.stub import StubFileGenerator
 from typegen.strats.gen import TypeHintGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
+
+import pytest
 
 def load_cst_module(path: pathlib.Path) -> cst.Module:
     module = cst.parse_module(source=path.open().read())
@@ -19,6 +21,7 @@ def test_factory():
     ), f"{type(gen)} should be {StubFileGenerator.__name__}"
 
 
+#@pytest.mark.skip(reason="stubgen is currently not interesting")
 def test_stub_file_generator_generates_expected_content(get_test_data):
     for test_element in get_test_data:
         resource_path = test_element[0]

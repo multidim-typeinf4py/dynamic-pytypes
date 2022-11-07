@@ -7,10 +7,10 @@ class TraceDataCategory(enum.IntEnum):
     LOCAL_VARIABLE = 1
     """Signifies a local variable in the trace data"""
 
-    FUNCTION_PARAMETER = 2
+    CALLABLE_PARAMETER = 2
     """Indicates that the traced instance is a function parameter"""
 
-    FUNCTION_RETURN = 3
+    CALLABLE_RETURN = 3
     """Marks the return type of a callable"""
 
     CLASS_MEMBER = 4

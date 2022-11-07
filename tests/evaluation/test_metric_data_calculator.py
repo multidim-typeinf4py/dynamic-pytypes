@@ -4,14 +4,14 @@ from evaluation.metric_data_calculator import MetricDataCalculator
 from evaluation.metric_data_calculator import get_total_completeness_and_correctness
 from constants import Schema
 
-def get_sample_data():
+def get_sample_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     sample_original_data = pd.DataFrame(columns=Schema.TypeHintData.keys())
     sample_original_data.loc[len(sample_original_data.index)] = [
         "sample_original_filename",
         None,
         "sample_function_name",
         0,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "parameter",
         int.__name__,
     ]
@@ -47,7 +47,7 @@ def get_sample_data():
         str.__name__,
         "sample_function_name2",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_function_name2",
         float.__name__,
     ]
@@ -58,7 +58,7 @@ def get_sample_data():
         None,
         "sample_function_name",
         0,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "parameter",
         int.__name__,
     ]
@@ -102,7 +102,7 @@ def test_metric_calculator_returns_correct_metric_data():
         None,
         "sample_function_name",
         0,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "parameter",
         int.__name__,
         int.__name__,
@@ -150,7 +150,7 @@ def test_metric_calculator_returns_correct_metric_data():
         str.__name__,
         "sample_function_name2",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_function_name2",
         float.__name__,
         None,

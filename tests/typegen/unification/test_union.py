@@ -105,7 +105,7 @@ def test_all_builtins_get_empty_strings():
         None,
         "stringify",
         1,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         None,
         f"{int.__name__}",]
@@ -115,7 +115,7 @@ def test_all_builtins_get_empty_strings():
         None,
         "stringify",
         1,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         None,
         f"{str.__name__}",]
@@ -125,7 +125,7 @@ def test_all_builtins_get_empty_strings():
         None,
         "stringify",
         1,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         "pathlib",
         f"{pathlib.Path.__name__}",]
@@ -137,7 +137,7 @@ def test_all_builtins_get_empty_strings():
         None,
         "stringify",
         1,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         ",,pathlib",
         f"{int.__name__} | {str.__name__} | {pathlib.Path.__name__}",

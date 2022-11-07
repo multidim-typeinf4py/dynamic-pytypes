@@ -11,6 +11,24 @@ import pandas as pd
 from constants import Column, Schema
 
 
+@dataclass
+class TraceUpdateOverride:
+    # The file name in which the variables are declared
+    file_name: pathlib.Path | None = None
+
+    # Module of the class the variable is in
+    class_module: str | None = None
+
+    # Name of the class the variable is in
+    class_name: str | None = None
+
+    # The function which declares the variable
+    function_name: str | None = None
+
+    # The line number
+    line_number: int | None = None
+
+
 @dataclass(frozen=True)
 class TraceUpdate:
     """
@@ -52,14 +70,14 @@ TRACE_MAP = dict[str, tuple[str | None, str]]
 
 
 @dataclass
-class BatchTraceUpdate:
+class TraceBatch:
     """
-    A builder-pattern style interface for each relevant category, allowing updates to be chained as each event requires. 
+    A builder-pattern style interface for each relevant category, allowing updates to be chained as each event requires.
     After all updates have been handled, a DataFrame can be produced that is to added to the otherwise accumulated trace data.
 
     The constructor accepts values that are used by default to create instances of `TraceUpdate`,
     unless overwritten by an argument in one of the builder methods.
-    
+
     TRACE_MAP is defined as `dict[str, tuple[str | None, str]]`, which is a map of identifiers to (module name, type name).
     The module_name is None if the type is builtin, such as int, str, float etc.
 
@@ -82,25 +100,29 @@ class BatchTraceUpdate:
         self,
         line_number: int,
         names2types: TRACE_MAP,
-    ) -> BatchTraceUpdate:
+        override: TraceUpdateOverride | None = None,
+    ) -> TraceBatch:
         """
         Create an update consisting of local variables
 
-        :params line_number: Because the line number that a variable is written on is not the same 
+        :params line_number: Because the line number that a variable is written on is not the same
             as the one it is put on the stack, this must be manually specified
         :params names2types: Names of local variables mapped to the module and type names of their types
+        :params override: Replace default values specified in constructor hereby
         :returns: A reference to newly updated batch
         """
-        if names2types:
-            update = TraceUpdate(
-                file_name=self.file_name,
-                class_module=self.class_module,
-                class_name=self.class_name,
-                function_name=self.function_name,
-                line_number=line_number,
-                category=TraceDataCategory.LOCAL_VARIABLE,
-                names2types=names2types,
-            )
+        if override is not None:
+            assert (
+                override.line_number is None
+            ), f"Cannot specify `line_number` twice in {self.local_variables.__name__}; Found {line_number=} as an argument, and {override.line_number=} as an override"
+
+        override = override or TraceUpdateOverride()
+        override.line_number = override.line_number or line_number
+
+        update = self._build_update(
+            names2types, category=TraceDataCategory.LOCAL_VARIABLE, override=override
+        )
+        if update:
             self._updates.append(update)
 
         return self
@@ -108,25 +130,26 @@ class BatchTraceUpdate:
     def global_variables(
         self,
         names2types: TRACE_MAP,
-    ) -> BatchTraceUpdate:
+        override: TraceUpdateOverride | None = None,
+    ) -> TraceBatch:
         """
         Create an update consisting of global variables.
         Because they are stateful, their line number is always 0, and can only be
         differentiated by their name and the file they occur in
 
         :params names2types: Names of global variables mapped to the module and type names of their types
+        :params override: Replace default values specified in constructor hereby
         :returns: A reference to newly updated batch
         """
-        if names2types:
-            update = TraceUpdate(
-                file_name=self.file_name,
-                class_module=None,
-                class_name=None,
-                function_name=None,
-                line_number=0,
-                category=TraceDataCategory.GLOBAL_VARIABLE,
-                names2types=names2types,
-            )
+        override = override or TraceUpdateOverride()
+        override.line_number = override.line_number or 0
+
+        update = self._build_update(
+            names2types,
+            category=TraceDataCategory.GLOBAL_VARIABLE,
+            override=override,
+        )
+        if update:
             self._updates.append(update)
 
         return self
@@ -134,24 +157,24 @@ class BatchTraceUpdate:
     def returns(
         self,
         names2types: TRACE_MAP,
-    ) -> BatchTraceUpdate:
+        override: TraceUpdateOverride | None = None,
+    ) -> TraceBatch:
         """
         Create an update consisting of return types from functions.
         Their line number is always 0, so that unifiers can group them together appropriately later.
 
         :params names2types: Names of functions mapped to the module and type name of their return types
+        :params override: Replace default values specified in constructor hereby
         :returns: A reference to newly updated batch
         """
-        if names2types:
-            update = TraceUpdate(
-                file_name=self.file_name,
-                class_module=self.class_module,
-                class_name=self.class_name,
-                function_name=self.function_name,
-                line_number=0,
-                category=TraceDataCategory.FUNCTION_RETURN,
-                names2types=names2types,
-            )
+        override = override or TraceUpdateOverride()
+        override.line_number = override.line_number or 0
+        update = self._build_update(
+            names2types,
+            category=TraceDataCategory.CALLABLE_RETURN,
+            override=override,
+        )
+        if update:
             self._updates.append(update)
 
         return self
@@ -159,23 +182,23 @@ class BatchTraceUpdate:
     def parameters(
         self,
         names2types: TRACE_MAP,
-    ) -> BatchTraceUpdate:
+        override: TraceUpdateOverride | None = None,
+    ) -> TraceBatch:
         """
         Create an update consisting of parameters for a callable.
 
         :params names2types: Names of the parameters to a callable mapped to the module and type names of their types
+        :params override: Replace default values specified in constructor hereby
         :returns: A reference to newly updated batch
         """
-        if names2types:
-            update = TraceUpdate(
-                file_name=self.file_name,
-                class_module=self.class_module,
-                class_name=self.class_name,
-                function_name=self.function_name,
-                line_number=self.line_number,
-                category=TraceDataCategory.FUNCTION_PARAMETER,
-                names2types=names2types,
-            )
+        override = override or TraceUpdateOverride()
+        override.line_number = override.line_number or self.line_number
+        update = self._build_update(
+            names2types,
+            category=TraceDataCategory.CALLABLE_PARAMETER,
+            override=override,
+        )
+        if update:
             self._updates.append(update)
 
         return self
@@ -183,40 +206,35 @@ class BatchTraceUpdate:
     def members(
         self,
         names2types: TRACE_MAP,
-    ) -> BatchTraceUpdate:
+        override: TraceUpdateOverride | None = None,
+    ) -> TraceBatch:
         """
         Create an update consisting of attributes of a class.
         Because they are stateful, their line number is always 0, and can only be
         differentiated by the file they occur in, their identifier and the class they occur in
 
         :params names2types: Names of the members of a class mapped to the module and type names of their types
+        :params override: Replace default values specified in constructor hereby
         :returns: A reference to newly updated batch
         """
-        if names2types:
-            # Line number is 0 and function name is empty to
-            # unify matching class members better.
-            # Class Members contain state and can theoretically, at any time,
-            # on the same line, be of many types
-            update = TraceUpdate(
-                file_name=self.file_name,
-                class_module=self.class_module,
-                class_name=self.class_name,
-                function_name=None,
-                line_number=0,
-                category=TraceDataCategory.CLASS_MEMBER,
-                names2types=names2types,
-            )
+        override = override or TraceUpdateOverride()
 
-        self._updates.append(update)
+        override.line_number = override.line_number or 0
+
+        update = self._build_update(
+            names2types, category=TraceDataCategory.CLASS_MEMBER, override=override
+        )
+        if update:
+            self._updates.append(update)
 
         return self
 
-    def to_frame(self: BatchTraceUpdate) -> pd.DataFrame:
+    def to_frame(self) -> pd.DataFrame:
         """
         Consume this batch of updates in order to produce a DataFrame.
 
         :params self: Nothing else :)
-        :returns: A DataFrame encompassing the entire batch 
+        :returns: A DataFrame encompassing the entire batch
         """
         updates = list()
         for update in self._updates:
@@ -247,3 +265,22 @@ class BatchTraceUpdate:
             )
 
         return pd.concat(updates, ignore_index=True).astype(Schema.TraceData)
+
+    def _build_update(
+        self,
+        names2types: TRACE_MAP,
+        category: TraceDataCategory,
+        override: TraceUpdateOverride,
+    ) -> TraceUpdate | None:
+        if not names2types:
+            return None
+
+        return TraceUpdate(
+            file_name=override.file_name or self.file_name,
+            class_module=override.class_module or self.class_module,
+            class_name=override.class_name or self.class_name,
+            function_name=override.function_name or self.function_name,
+            line_number=override.line_number if override.line_number is not None else self.line_number,
+            category=category,
+            names2types=names2types,
+        )

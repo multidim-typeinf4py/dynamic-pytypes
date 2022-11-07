@@ -8,11 +8,11 @@ from constants import Column, Schema
 
 
 def _compare_dataframes(expected: pd.DataFrame, actual: pd.DataFrame):
-    if not expected.equals(actual):
+    if not (diff := expected.compare(actual)).empty:
         with pd.option_context("display.max_rows", None, "display.max_columns", None):
             print(f"expected:\n{expected}\n\n")
             print(f"actual:\n{actual}\n\n")
-            print(f"diff:\n{expected.compare(actual)}")
+            print(f"diff:\n{diff}")
             assert False
 
 
@@ -77,6 +77,7 @@ def read_from_global() -> str:
 class OuterClass:
     class InnerClass:
         ...
+
     def __init__(self) -> None:
         self.inner = OuterClass.InnerClass()
 
@@ -132,7 +133,7 @@ def test_if_tracer_traces_init_of_sample_class_it_collects_correct_tracing_data(
         sample_class_type,
         "__init__",
         50,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "this",
         sample_class_module,
         sample_class_type,
@@ -143,7 +144,7 @@ def test_if_tracer_traces_init_of_sample_class_it_collects_correct_tracing_data(
         sample_class_type,
         "__init__",
         50,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "integer",
         None,
         integer_type,
@@ -154,7 +155,7 @@ def test_if_tracer_traces_init_of_sample_class_it_collects_correct_tracing_data(
         sample_class_type,
         "__init__",
         50,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "string",
         None,
         string_type,
@@ -187,7 +188,7 @@ def test_if_tracer_traces_init_of_sample_class_it_collects_correct_tracing_data(
         sample_class_type,
         "__init__",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "__init__",
         None,
         none_type,
@@ -226,7 +227,7 @@ def test_if_tracer_traces_function_of_sample_class_it_collects_correct_tracing_d
         sample_class_type,
         "sample_check_if_arguments_match_members",
         54,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         module,
         sample_class_type,
@@ -237,7 +238,7 @@ def test_if_tracer_traces_function_of_sample_class_it_collects_correct_tracing_d
         sample_class_type,
         "sample_check_if_arguments_match_members",
         54,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "integer",
         None,
         integer_type,
@@ -248,7 +249,7 @@ def test_if_tracer_traces_function_of_sample_class_it_collects_correct_tracing_d
         sample_class_type,
         "sample_check_if_arguments_match_members",
         54,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "string",
         None,
         string_type,
@@ -303,7 +304,7 @@ def test_if_tracer_traces_function_of_sample_class_it_collects_correct_tracing_d
         sample_class_type,
         "sample_check_if_arguments_match_members",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_check_if_arguments_match_members",
         None,
         bool_type,
@@ -337,7 +338,7 @@ def test_if_tracer_traces_sample_function_which_raises_error_it_collects_correct
         None,
         "sample_convert_string_to_int",
         41,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "string_to_convert",
         None,
         string_type,
@@ -348,7 +349,7 @@ def test_if_tracer_traces_sample_function_which_raises_error_it_collects_correct
         None,
         "sample_convert_string_to_int",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_convert_string_to_int",
         None,
         none_type,
@@ -379,7 +380,7 @@ def test_if_tracer_traces_sample_function_it_collects_correct_tracing_data(
         None,
         "sample_compare_integers",
         31,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "value1",
         None,
         itype,
@@ -390,7 +391,7 @@ def test_if_tracer_traces_sample_function_it_collects_correct_tracing_data(
         None,
         "sample_compare_integers",
         31,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "value2",
         None,
         itype,
@@ -412,7 +413,7 @@ def test_if_tracer_traces_sample_function_it_collects_correct_tracing_data(
         None,
         "sample_compare_integers",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_compare_integers",
         None,
         btype,
@@ -464,7 +465,7 @@ def test_if_tracer_traces_sample_function_which_defines_multiple_variables_in_on
         None,
         "sample_get_two_variables_declared_in_one_line",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_get_two_variables_declared_in_one_line",
         None,
         tuple_type,
@@ -498,7 +499,7 @@ def test_if_tracer_traces_sample_function_with_inner_function_it_collects_correc
         None,
         "sample_compare_two_int_lists",
         19,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "list1",
         None,
         list_type,
@@ -509,7 +510,7 @@ def test_if_tracer_traces_sample_function_with_inner_function_it_collects_correc
         None,
         "sample_compare_two_int_lists",
         19,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "list2",
         None,
         list_type,
@@ -553,7 +554,7 @@ def test_if_tracer_traces_sample_function_with_inner_function_it_collects_correc
         None,
         "sample_compare_integers",
         31,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "value1",
         None,
         int_type,
@@ -564,7 +565,7 @@ def test_if_tracer_traces_sample_function_with_inner_function_it_collects_correc
         None,
         "sample_compare_integers",
         31,
-        TraceDataCategory.FUNCTION_PARAMETER,
+        TraceDataCategory.CALLABLE_PARAMETER,
         "value2",
         None,
         int_type,
@@ -586,7 +587,7 @@ def test_if_tracer_traces_sample_function_with_inner_function_it_collects_correc
         None,
         "sample_compare_integers",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_compare_integers",
         None,
         bool_type,
@@ -608,7 +609,7 @@ def test_if_tracer_traces_sample_function_with_inner_function_it_collects_correc
         None,
         "sample_compare_two_int_lists",
         0,
-        TraceDataCategory.FUNCTION_RETURN,
+        TraceDataCategory.CALLABLE_RETURN,
         "sample_compare_two_int_lists",
         None,
         bool_type,
@@ -654,7 +655,7 @@ def test_tracer_finds_globals(tracers: list[Tracer]):
         filepath,
         None,
         None,
-        None,
+        "modify_global",
         0,
         TraceDataCategory.GLOBAL_VARIABLE,
         "a_global_var",
@@ -665,7 +666,7 @@ def test_tracer_finds_globals(tracers: list[Tracer]):
         filepath,
         None,
         None,
-        None,
+        "create_and_set_global",
         0,
         TraceDataCategory.GLOBAL_VARIABLE,
         "a_global_var",
@@ -696,7 +697,7 @@ def test_tracer_names_inner_correctly(tracers: list[Tracer]):
         filepath,
         "tests.tracing.test_tracer",
         "OuterClass",
-        None,
+        "__init__",
         0,
         TraceDataCategory.CLASS_MEMBER,
         "inner",
@@ -712,4 +713,6 @@ def test_tracer_names_inner_correctly(tracers: list[Tracer]):
         logging.debug(f"\n{trace_data}")
 
         subset = expected.merge(trace_data, how="inner")
-        assert len(subset) == len(expected), f"Failed to find inner class!\n{trace_data}"
+        assert len(subset) == len(
+            expected
+        ), f"Failed to find inner class!\n{trace_data}"

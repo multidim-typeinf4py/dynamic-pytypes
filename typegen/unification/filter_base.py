@@ -41,6 +41,13 @@ class TraceDataFilter(abc.ABC):
         """
         pass
 
+    @property
+    @abc.abstractmethod
+    def ident(self): 
+        """Human-readable unique identifier amongst derivates of `TraceDataFilter`
+        """
+        pass
+
 
 class TraceDataFilterList(TraceDataFilter):
     """Applies the filters in this list on the trace data in the order they were appended"""

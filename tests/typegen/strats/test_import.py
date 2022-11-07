@@ -4,13 +4,13 @@ import pytest
 
 import libcst as cst
 
-from tracing.trace_update import BatchTraceUpdate
+from tracing.batch import TraceBatch
 from typegen.strats.imports import AddImportTransformer
 
 
 @pytest.fixture
 def importer(scope="function") -> AddImportTransformer:
-    batch = BatchTraceUpdate(
+    batch = TraceBatch(
         file_name=pathlib.Path("tests", "typegen", "strats", "test_import.py"),
         class_module=None,
         class_name=None,

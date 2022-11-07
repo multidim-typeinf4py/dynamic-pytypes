@@ -83,7 +83,7 @@ class MyPyHintTransformer(cst.CSTTransformer):
                     mod=module,
                     target=tempstub.name,
                     parse_only=False,
-                    pyversion=options.pyversion,
+                    # pyversion=options.pyversion, # disabled due to mypy complaining
                 )
 
             with tempstub_path.open() as file:

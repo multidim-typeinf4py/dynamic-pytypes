@@ -163,7 +163,7 @@ class _TypeHintVisitor(cst.CSTVisitor):
             return True
         variable_name = self._get_variable_name(node)
         type_hint = self._get_annotation_value(node.annotation.annotation)
-        self._add_row(0, TraceDataCategory.FUNCTION_PARAMETER, variable_name, type_hint)
+        self._add_row(0, TraceDataCategory.CALLABLE_PARAMETER, variable_name, type_hint)
         return True
 
     def visit_FunctionDef_returns(self, node: cst.FunctionDef) -> None:
@@ -172,7 +172,7 @@ class _TypeHintVisitor(cst.CSTVisitor):
             type_hint = self._get_annotation_value(node.returns.annotation)
         else:
             type_hint = None
-        self._add_row(0, TraceDataCategory.FUNCTION_RETURN, variable_name, type_hint)
+        self._add_row(0, TraceDataCategory.CALLABLE_RETURN, variable_name, type_hint)
 
     def visit_AnnAssign(self, node: cst.AnnAssign) -> bool | None:
         line_number = self._get_line_number(node)
