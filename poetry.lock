@@ -363,7 +363,7 @@ mkdocstrings = ">=0.19"
 name = "mypy"
 version = "0.981"
 description = "Optional static typing for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -658,7 +658,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -764,7 +764,7 @@ doc-tools = ["mkdocs", "mkdocs-material", "mkdocstrings"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<4"
-content-hash = "07ca6243aac5ade1690f79b5ccec3000d5edbc45e3efc8f54095867b5109ecfe"
+content-hash = "b1513a98660c3c0d82fbaca9b59f36d0b46af6ece575dc8c0558b092411784cf"
 
 [metadata.files]
 attrs = [
