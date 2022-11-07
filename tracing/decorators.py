@@ -108,9 +108,7 @@ def _execute_tracing(
                 "func_name": f"{subst.func_name}-{hash(str(benchmarks))}",
             }
         )
-        benchmark_output_path = (
-            config.pytypes.proj_path / benchmark_subst
-        )
+        benchmark_output_path = config.pytypes.proj_path / benchmark_subst
         benchmark_output_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(benchmark_output_path, benchmarks)
 
@@ -145,7 +143,7 @@ class _Traceable(Protocol):
 def trace(c: Callable[..., RetType]) -> _Traceable:
     """
     Execute the tracer upon a callable marked with this decorator.
-    Serialises the accumulated trace data after the callable has finished to the location given 
+    Serialises the accumulated trace data after the callable has finished to the location given
     by the config file.
     Uncaught exceptions are logged next to these pickled DataFrames.
     Supports performance benchmarking when specified in the config file.
@@ -185,9 +183,13 @@ def trace(c: Callable[..., RetType]) -> _Traceable:
     return wrapper
 
 
-def dev_trace(c: Callable[..., RetType]) -> _Traceable:
-    """Identical to `trace`, but returns the collected dataframe for testing purposes
-    """
+class _DevTraceable(Protocol):
+    def __call__(self, *args: Any, **kwds: Any) -> None:
+        pass
+
+
+def dev_trace(c: Callable[..., RetType]) -> _DevTraceable:
+    """Identical to `trace`, but returns the collected dataframe for testing purposes"""
     current_frame = inspect.currentframe()
     if current_frame is None:
         raise RuntimeError(
@@ -207,7 +209,7 @@ def dev_trace(c: Callable[..., RetType]) -> _Traceable:
     cfg = ptconfig.load_config(pathlib.Path(constants.CONFIG_FILE_NAME))
 
     @functools.wraps(c)
-    def wrapper(*args, **kwargs) -> tuple[pd.DataFrame, np.ndarray | None]:
+    def wrapper(*args, **kwargs) -> None:
         subst = _TemplateSubstitutes(
             project=cfg.pytypes.project,
             test_case=module_name,
