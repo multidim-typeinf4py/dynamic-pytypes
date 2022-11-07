@@ -70,7 +70,7 @@ TRACE_MAP = dict[str, tuple[str | None, str]]
 
 
 @dataclass
-class BatchTraceUpdate:
+class TraceBatch:
     """
     A builder-pattern style interface for each relevant category, allowing updates to be chained as each event requires.
     After all updates have been handled, a DataFrame can be produced that is to added to the otherwise accumulated trace data.
@@ -101,7 +101,7 @@ class BatchTraceUpdate:
         line_number: int,
         names2types: TRACE_MAP,
         override: TraceUpdateOverride | None = None,
-    ) -> BatchTraceUpdate:
+    ) -> TraceBatch:
         """
         Create an update consisting of local variables
 
@@ -131,7 +131,7 @@ class BatchTraceUpdate:
         self,
         names2types: TRACE_MAP,
         override: TraceUpdateOverride | None = None,
-    ) -> BatchTraceUpdate:
+    ) -> TraceBatch:
         """
         Create an update consisting of global variables.
         Because they are stateful, their line number is always 0, and can only be
@@ -158,7 +158,7 @@ class BatchTraceUpdate:
         self,
         names2types: TRACE_MAP,
         override: TraceUpdateOverride | None = None,
-    ) -> BatchTraceUpdate:
+    ) -> TraceBatch:
         """
         Create an update consisting of return types from functions.
         Their line number is always 0, so that unifiers can group them together appropriately later.
@@ -183,7 +183,7 @@ class BatchTraceUpdate:
         self,
         names2types: TRACE_MAP,
         override: TraceUpdateOverride | None = None,
-    ) -> BatchTraceUpdate:
+    ) -> TraceBatch:
         """
         Create an update consisting of parameters for a callable.
 
@@ -207,7 +207,7 @@ class BatchTraceUpdate:
         self,
         names2types: TRACE_MAP,
         override: TraceUpdateOverride | None = None,
-    ) -> BatchTraceUpdate:
+    ) -> TraceBatch:
         """
         Create an update consisting of attributes of a class.
         Because they are stateful, their line number is always 0, and can only be
@@ -229,7 +229,7 @@ class BatchTraceUpdate:
 
         return self
 
-    def to_frame(self: BatchTraceUpdate) -> pd.DataFrame:
+    def to_frame(self) -> pd.DataFrame:
         """
         Consume this batch of updates in order to produce a DataFrame.
 

@@ -14,7 +14,7 @@ import pathlib
 
 from constants import Column, Schema
 from common.resolver import Resolver
-from tracing.trace_update import BatchTraceUpdate
+from tracing.batch import TraceBatch
 
 from .optimisation import (
     TriggerStatus,
@@ -195,7 +195,7 @@ class Tracer(TracerBase):
         for optimisation in self.optimisation_stack:
             optimisation.advance(fwm, self.trace_data)
 
-    def _on_call(self, frame, batch: BatchTraceUpdate) -> BatchTraceUpdate:
+    def _on_call(self, frame, batch: TraceBatch) -> TraceBatch:
         names2types = dict()
 
         for name, value in frame.f_locals.items():
@@ -207,8 +207,8 @@ class Tracer(TracerBase):
         return batch.parameters(names2types)
 
     def _on_return(
-        self, frame, arg: typing.Any, batch: BatchTraceUpdate
-    ) -> BatchTraceUpdate:
+        self, frame, arg: typing.Any, batch: TraceBatch
+    ) -> TraceBatch:
         code = frame.f_code
         function_name = code.co_name
 
@@ -220,8 +220,8 @@ class Tracer(TracerBase):
         return batch.returns(names2types)
 
     def _on_line(
-        self, frame, real_line_number: int, batch: BatchTraceUpdate
-    ) -> BatchTraceUpdate:
+        self, frame, real_line_number: int, batch: TraceBatch
+    ) -> TraceBatch:
         local_names2types = self._get_new_defined_variables_with_types(
             self.old_local_vars[frame.f_code.co_name],
             frame.f_locals,
@@ -239,8 +239,8 @@ class Tracer(TracerBase):
         return with_global
 
     def _on_class_function_return(
-        self, frame, batch: BatchTraceUpdate
-    ) -> BatchTraceUpdate:
+        self, frame, batch: TraceBatch
+    ) -> TraceBatch:
         """Updates the trace data with the members of the class object."""
         first_element_name = next(iter(frame.f_locals), None)
         if first_element_name is None:
@@ -295,7 +295,7 @@ class Tracer(TracerBase):
 
         frameinfo = inspect.getframeinfo(frame)
 
-        batch = BatchTraceUpdate(
+        batch = TraceBatch(
             file_name=file_name,
             class_module=class_module,
             class_name=class_name,
@@ -345,7 +345,7 @@ class Tracer(TracerBase):
 
         return self._on_trace_is_called
 
-    def _update_trace_data_with(self, batch_update: BatchTraceUpdate) -> None:
+    def _update_trace_data_with(self, batch_update: TraceBatch) -> None:
         """
         Constructs a DataFrame from the provided updates, and appends
         it to the existing trace data collection.
