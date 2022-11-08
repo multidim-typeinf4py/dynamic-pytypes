@@ -124,7 +124,7 @@ class ParameterHintChecker(cst.CSTVisitor):
                 ), f"{self.__class__.__name__} - Failed to match method `{node.name.value}`"
 
             case _:
-                assert False, f"Unexpected scope: {scope.__class__}"
+                assert False, f"Unexpected scope: {scope.__class__.__name__}"
 
 
 class ReturnHintChecker(cst.CSTVisitor):
@@ -171,4 +171,4 @@ class ReturnHintChecker(cst.CSTVisitor):
                 ), f"{self.__class__.__name__} - Failed to match method `{node.name.value}`"
 
             case _:
-                assert False, f"Unexpected scope: {scope.__class__}"
+                assert False, f"Unexpected scope: {scope.__class__.__name__}"
