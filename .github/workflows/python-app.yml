@@ -4,13 +4,9 @@
 name: Python application
 
 on: 
-  push:
-    branches: [main]
-
   pull_request:
-    types: [synchronize]
-
-    
+    types: [assigned, opened, synchronize, reopened]    
+    branches: [develop]
 
 permissions:
   contents: read
