@@ -88,7 +88,7 @@ class TraceBatch:
     file_name: pathlib.Path
     class_module: str | None
     class_name: str | None
-    function_name: str
+    function_name: str | None
     line_number: int
 
     _updates: list[TraceUpdate] = field(default_factory=list)
