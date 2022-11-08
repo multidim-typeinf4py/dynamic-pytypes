@@ -3,17 +3,21 @@
 
 name: Python application
 
-on:
+on: 
   push:
-    branches-ignore:
-      - docs/*
-      - docsfix/*
+    branches: [main]
+
+  pull_request:
+    types: [synchronize]
+
+    
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: github.event.pull_request.draft == 'false'
     runs-on: ubuntu-latest
 
     steps:
