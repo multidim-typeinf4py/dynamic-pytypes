@@ -31,12 +31,20 @@ class TargetExtractor(cst.CSTVisitor):
     def __init__(self):
         self.targets = Targets(list(), list())
 
-    def visit_Attribute(self, node: cst.Attribute) -> bool | None:
-        self.targets.attrs.append((node.attr.value, node))
+    def visit_Subscript(self, node: cst.Subscript) -> bool | None:
+        match node.value:
+            case cst.Name():
+                self.targets.names.append((node.value.value, node.value))
+            case cst.Attribute():
+                self.targets.attrs.append((node.value.attr.value, node.value))
         return False
 
     def visit_Name(self, node: cst.Name) -> bool | None:
         self.targets.names.append((node.value, node))
+        return False
+
+    def visit_Attribute(self, node: cst.Attribute) -> bool | None:
+        self.targets.attrs.append((node.attr.value, node))
         return False
 
 
@@ -44,11 +52,16 @@ def _find_targets(
     node: cst.Assign | cst.AnnAssign | cst.AugAssign,
 ) -> Targets:
     extractor = TargetExtractor()
-    if isinstance(node, cst.AnnAssign | cst.AugAssign):
-        node.target.visit(extractor)
-    else:
-        for target in node.targets:
-            target.visit(extractor)
+
+    match node:
+        case cst.AnnAssign() | cst.AugAssign():
+            node.target.visit(extractor)
+        case cst.Assign():
+            for target in node.targets:
+                target.visit(extractor)
+        case _:
+            assert False, f"Unsupported node for target searching - {node.__class__.__name__}"
+
     return extractor.targets
 
 
@@ -74,61 +87,58 @@ class TypeHintTransformer(cst.CSTTransformer):
         self.df.loc[mask, Column.VARTYPE] = "None"
 
         self._module = module
-        self._scope_stack: list[cst.FunctionDef | cst.ClassDef] = []
 
-        self._globals_by_scope: dict[cst.FunctionDef, set[str]] = {}
+    def _is_in_global_scope(self, node: cst.CSTNode) -> bool:
+        match self.get_metadata(metadata.ScopeProvider, node):
+            case metadata.GlobalScope():
+                return True
+            case _:
+                return False
 
-    def _is_global_scope(self) -> bool:
-        return len(self._scope_stack) == 0
+    def scopes_of(self, node: cst.CSTNode) -> Iterator[metadata.Scope]:
+        if (scope := self.get_metadata(metadata.ScopeProvider, node)) is None:
+            return
 
-    def _all_scopes_of(self, node: cst.CSTNode) -> Iterator[metadata.Scope]:
-        yield (scope := self.get_metadata(metadata.ScopeProvider, node))
+        yield scope
 
         match scope:
             case metadata.ClassScope(node=p) | metadata.FunctionScope(node=p):
-                yield from self._all_scopes_of(p)
+                yield from self.scopes_of(p)
             case _:
-                yield None
                 return
 
-    def _innermost_class(self) -> cst.ClassDef | None:
-        fromtop = reversed(self._scope_stack)
-        classes = filter(lambda p: isinstance(p, cst.ClassDef), fromtop)
+    def _innermost_class(self, node: cst.CSTNode) -> cst.ClassDef | None:
+        classes = filter(
+            lambda p: isinstance(p, metadata.ClassScope), self.scopes_of(node)
+        )
 
-        first: cst.ClassDef | None = next(classes, None)  # type: ignore
-        return first
+        first: metadata.ClassScope | None = next(classes, None)  # type: ignore
+        cdef: cst.ClassDef | None = first.node if first is not None else None  # type: ignore
 
-    def _innermost_function(self) -> cst.FunctionDef | None:
-        fromtop = reversed(self._scope_stack)
-        fdefs = filter(lambda p: isinstance(p, cst.FunctionDef), fromtop)
+        return cdef
 
-        first: cst.FunctionDef | None = next(fdefs, None)  # type: ignore
-        return first
+    def _innermost_function(self, node: cst.CSTNode) -> cst.FunctionDef | None:
+        classes = filter(
+            lambda p: isinstance(p, metadata.FunctionScope), self.scopes_of(node)
+        )
+
+        first: metadata.FunctionScope | None = next(classes, None)  # type: ignore
+        fdef: cst.FunctionDef | None = first.node if first is not None else None  # type: ignore
+
+        return fdef
 
     def _find_visible_globals(
         self, node: cst.Assign | cst.AnnAssign | cst.AugAssign
     ) -> typing.Iterator[str]:
-        # Check if this is global scope
-        if self._is_global_scope():
-            # We are in the global scope -> any variable written on this line must be a global!
-            # Only consider names, as we are outside of class scope, and we shall not annotate
-            # class attributes outside of said class
-            logger.debug(
-                "This is global scope; Using the variables on the given line as globals!"
-            )
-            yield from map(operator.itemgetter(0), _find_targets(node).names)
-
-        fromtop = reversed(self._scope_stack)
-        fdefs = filter(lambda p: isinstance(p, cst.FunctionDef), fromtop)
-
-        # Advance iterator and collect globals
-        # mypy fails to narrow the fdef type here
-        SENTINEL: set[str] = set()
-        yield from (
-            glbl
-            for fdef in fdefs
-            for glbl in self._globals_by_scope.get(fdef, SENTINEL)  # type: ignore
+        scopes = self.scopes_of(node)
+        global_scope = next(
+            filter(lambda scope: isinstance(scope, metadata.GlobalScope), scopes), None
         )
+
+        if global_scope is None:
+            return
+
+        yield from global_scope.assignments._assignments.keys()
 
     def _get_trace_for_targets(
         self, node: cst.Assign | cst.AnnAssign | cst.AugAssign
@@ -137,35 +147,29 @@ class TypeHintTransformer(cst.CSTTransformer):
         Fetches trace data for the targets from the given assignment statement.
         Return order is (global variables, local variables, class attributes, targets)
         """
+
         targets = _find_targets(node)
-        glbls = set(self._find_visible_globals(node))
+        target_names = [ident for ident, _ in targets.names]
+        if self._is_in_global_scope(node):
+            global_var_idents = target_names
+            local_var_idents = list()
 
-        local_var_idents = list()
-        global_var_idents = list()
+        else:
+            global_var_idents = list(self._find_visible_globals(node))
+            local_var_idents = list(set(target_names) - set(global_var_idents))
 
-        for ident, _ in targets.names:
-            if ident not in glbls:
-                logger.debug(f"Interpreted '{ident}' as a local variable")
-                local_var_idents.append(ident)
-            elif self._is_global_scope():
-                # Skip the globals if we are not in outer scope
-                logger.debug(f"Interpreted '{ident}' as a global variable")
-                global_var_idents.append(ident)
-            else:
-                logger.debug(
-                    f"Skipping '{ident}' during trace collection, as it is 'global', but not in global scopage"
-                )
+        attr_idents = [ident for ident, _ in targets.attrs]
 
-        attr_idents = list(map(operator.itemgetter(0), targets.attrs))
-
-        containing_classes: list[cst.ClassDef] = []
-
-        # Crawl over class stack and analyse available attributes
-        # Iterate in reverse to match scope resolution order
-        for scope in reversed(self._scope_stack):
-            if isinstance(scope, cst.ClassDef):
-                containing_classes.append(scope)
-
+        # Crawl over class scopage and analyse available attributes
+        containing_classes = list(
+            map(
+                lambda cs: cs.node,
+                filter(
+                    lambda scope: isinstance(scope, metadata.ClassScope),
+                    self.scopes_of(node),
+                ),
+            )
+        )
         if not len(containing_classes):
             class_mask = self.df[Column.CLASS].isnull()
             class_module_mask = self.df[Column.CLASS_MODULE].isnull()
@@ -218,7 +222,7 @@ class TypeHintTransformer(cst.CSTTransformer):
         var: cst.BaseAssignTargetExpression,
     ) -> pd.DataFrame:
         if isinstance(var, cst.Name):
-            if self._is_global_scope():
+            if self._is_in_global_scope(var):
                 logger.debug(f"Searching for '{ident}' in global variables")
                 hinted = global_vars[global_vars[Column.VARNAME] == ident]
             else:
@@ -233,19 +237,19 @@ class TypeHintTransformer(cst.CSTTransformer):
 
     def _get_trace_for_param(self, node: cst.Param) -> pd.DataFrame:
         # Retrieve outermost function from parent stack
-        fdef = self._innermost_function()
+        fdef = self._innermost_function(node)
         assert (
             fdef is not None
         ), f"param {node.name.value} has not been associated with a function"
 
-        scopes = self._all_scopes_of(node)
+        scopes = self.scopes_of(node)
         if any(isinstance(s := scope, metadata.ClassScope) for scope in scopes):
-            logger.debug(f"Searching for {node.name} in {s.name}")
+            # logger.debug(f"Searching for {node.name} in {s.name}")
             assert hasattr(s, "name")
-            clazz_mask = self.df[Column.CLASS] == s.name
+            clazz_mask = self.df[Column.CLASS] == s.name  # type: ignore
             class_module_mask = self.df[Column.CLASS_MODULE] == self._module
         else:
-            logger.debug(f"Searching for {node.name} outside of class scope")
+            # logger.debug(f"Searching for {node.name} outside of class scope")
             clazz_mask = self.df[Column.CLASS].isnull()
             class_module_mask = self.df[Column.CLASS_MODULE].isnull()
 
@@ -262,7 +266,7 @@ class TypeHintTransformer(cst.CSTTransformer):
     def _get_trace_for_rettype(self, node: cst.FunctionDef) -> pd.DataFrame:
         # Retrieve outermost class from parent stack
         # to disambig. methods and functions
-        cdef = self._innermost_class()
+        cdef = self._innermost_class(node)
         if cdef is not None:
             clazz_mask = self.df[Column.CLASS] == cdef.name.value
             class_module_mask = self.df[Column.CLASS_MODULE] == self._module
@@ -284,40 +288,26 @@ class TypeHintTransformer(cst.CSTTransformer):
         logger.info(f"Entering class '{cdef.name.value}'")
 
         # Track ClassDefs to disambiguate functions from methods
-        self._scope_stack.append(cdef)
         return True
 
     def leave_ClassDef(self, _: cst.ClassDef, updated: cst.ClassDef) -> cst.ClassDef:
         logger.info(f"Leaving class '{updated.name.value}'")
-
-        self._scope_stack.pop()
         return updated
 
     def visit_FunctionDef(self, fdef: cst.FunctionDef) -> bool | None:
         logger.info(f"Entering function '{fdef.name.value}'")
-        self._scope_stack.append(fdef)
         return True
 
     def visit_Global(self, node: cst.Global) -> bool | None:
         names = set(map(lambda n: n.name.value, node.names))
         logger.info(f"Registered global(s): '{names}'")
 
-        fdef = self._innermost_function()
-        assert fdef is not None
-
-        # globals are global for the scope they are currently part of
-        self._globals_by_scope[fdef] = names
         return True
 
     def leave_FunctionDef(
         self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
     ) -> cst.FunctionDef:
         logger.info(f"Leaving FunctionDef '{original_node.name.value}'")
-        self._scope_stack.pop()
-
-        if original_node in self._globals_by_scope:
-            del self._globals_by_scope[original_node]
-
         if updated_node.returns is not None:
             logger.warning(
                 f"'{original_node.name.value}' already has an annotation, returning."
@@ -479,7 +469,9 @@ class TypeHintTransformer(cst.CSTTransformer):
 
         # only one target is possible
         tgt_cnt = len(targets.attrs) + len(targets.names)
-        assert tgt_cnt == 1, f"Only exactly one target is possible, found {tgt_cnt}"
+        assert (
+            tgt_cnt == 1
+        ), f"{original_node.target} - Only exactly one target is possible, found {targets.names=}, {targets.attrs=} (len={tgt_cnt})"
 
         ident, var = next(itertools.chain(targets.attrs, targets.names))
         logger.debug(f"Searching for hints to '{ident}' for an AnnAssign")
