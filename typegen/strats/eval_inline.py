@@ -16,14 +16,14 @@ class RemoveAllTypeHintsTransformer(cst.CSTTransformer):
         return updated_node.with_changes(annotation=None)
 
     def leave_AnnAssign(
-        self, original_node: cst.AnnAssign, _: cst.AnnAssign
+        self, _: cst.AnnAssign, updated_node: cst.AnnAssign
     ) -> cst.Assign | cst.AnnAssign | cst.RemovalSentinel:
-        if original_node.value is None:
+        if updated_node.value is None:
             return cst.RemoveFromParent()
 
         return cst.Assign(
-            targets=[cst.AssignTarget(original_node.target)],
-            value=original_node.value,
+            targets=[cst.AssignTarget(updated_node.target)],
+            value=updated_node.value,
         )
 
 
