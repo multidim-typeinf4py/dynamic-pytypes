@@ -6,7 +6,8 @@ name: Python application
 on:
   push:
     branches-ignore:
-      - docs*
+      - docs/*
+      - docsfix/*
 
 permissions:
   contents: read
