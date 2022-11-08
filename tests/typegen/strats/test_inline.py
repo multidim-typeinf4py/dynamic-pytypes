@@ -5,6 +5,8 @@ from typegen.strats.inline import InlineGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 
+import difflib
+
 
 def load_cst_module(path: pathlib.Path) -> cst.Module:
     module = cst.parse_module(source=path.open().read())
@@ -32,13 +34,12 @@ def test_inline_generator_generates_expected_content(get_test_data):
         actual_file_content = hinted.code
         if actual_file_content != expected_inline_content:
             print(f"Test failed for: {str(resource_path)}")
-            print("Expected generated code: ")
-            print("---")
-            print(expected_inline_content)
-            print("---")
-            print("Actual generated code: ")
-            print("---")
-            print(actual_file_content)
-            print("---")
+            print(
+                "".join(
+                    difflib.unified_diff(
+                        expected_inline_content.splitlines(1),
+                        actual_file_content.splitlines(1),
+                    )
+                )
+            )
             assert False
-

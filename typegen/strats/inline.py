@@ -81,9 +81,9 @@ class TypeHintTransformer(cst.CSTTransformer):
     def _is_global_scope(self) -> bool:
         return len(self._scope_stack) == 0
 
-    def _all_scopes_of(self, node: cst.CSTNode) -> Iterator[cst.CSTNode]:
-        yield (scope := self.get_metadata(metadata.ScopeProvider, node).parent)
-        
+    def _all_scopes_of(self, node: cst.CSTNode) -> Iterator[metadata.Scope]:
+        yield (scope := self.get_metadata(metadata.ScopeProvider, node))
+
         match scope:
             case metadata.ClassScope(node=p) | metadata.FunctionScope(node=p):
                 yield from self._all_scopes_of(p)
@@ -241,6 +241,7 @@ class TypeHintTransformer(cst.CSTTransformer):
         scopes = self._all_scopes_of(node)
         if any(isinstance(s := scope, metadata.ClassScope) for scope in scopes):
             logger.debug(f"Searching for {node.name} in {s.name}")
+            assert hasattr(s, "name")
             clazz_mask = self.df[Column.CLASS] == s.name
             class_module_mask = self.df[Column.CLASS_MODULE] == self._module
         else:
