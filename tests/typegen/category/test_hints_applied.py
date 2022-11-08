@@ -27,6 +27,7 @@ GENERATOR = TypeHintGenerator(
     argvalues=[
         (checker.ParameterHintChecker(), remover.ParameterHintRemover()),
         (checker.ReturnHintChecker(), remover.ReturnHintRemover()),
+        (checker.AssignHintChecker(), remover.AssignHintRemover())
     ],
 )
 def test_category_hinting(
@@ -40,16 +41,7 @@ def test_category_hinting(
 
     # Remove type hints
     removed = typed.visit(rmvr)
-
-    print(
-        "REMOVAL:",
-        "".join(
-            difflib.unified_diff(
-                typed.module.code.splitlines(1), removed.code.splitlines(1)
-            )
-        ),
-        sep="\n",
-    )
+    assert removed.code != typed.module.code
 
     # Generate type hints
     reinserted = GENERATOR._gen_hinted_ast(

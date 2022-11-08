@@ -172,3 +172,10 @@ class ReturnHintChecker(cst.CSTVisitor):
 
             case _:
                 assert False, f"Unexpected scope: {scope.__class__.__name__}"
+
+
+class AssignHintChecker(cst.CSTVisitor):
+    METADATA_DEPENDENCIES = (metadata.ScopeProvider,)
+
+    
+    

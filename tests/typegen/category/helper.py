@@ -40,6 +40,11 @@ class Clazz:
     def function(self, a: A, b: B, c: C) -> int:
         v: str = f'{a}{b}{c}'
         return int(v)
+
+    a: int = 5
+    b.c: str = "Hello World!"
+    d[e]: bytes = b"Goodbye cruel World!"
+    (e, z, p, zee) = (a, b.c, d[e], b.c)
     """
     )
 
@@ -142,6 +147,18 @@ def traced() -> pd.DataFrame:
         .local_variables(line_number=26, names2types={"v": str.__name__})
         .to_frame()
     )
+
+    assign_exprs = (
+        TraceBatch(
+            file_name=pathlib.Path("x.py"),
+            class_module=None,
+            class_name=None,
+            function_name=None,
+            line_number=-1
+        )
+    )
+
+    cst.BaseAssignTargetExpression
 
     return pd.concat(
         [
