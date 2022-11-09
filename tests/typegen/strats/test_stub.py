@@ -2,8 +2,8 @@ import libcst as cst
 import pathlib
 from constants import Schema
 from common import TraceDataCategory
-from typegen.strats.stub import StubFileGenerator
-from typegen.strats.gen import TypeHintGenerator
+from typegen.strategy.stub import StubFileGenerator
+from typegen.strategy.gen import TypeHintGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 

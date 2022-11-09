@@ -5,7 +5,7 @@ import pytest
 import libcst as cst
 
 from tracing.batch import TraceBatch
-from typegen.strats.imports import AddImportTransformer
+from typegen.strategy.imports import AddImportTransformer
 
 
 @pytest.fixture

@@ -18,10 +18,10 @@ from .unification.union import UnionFilter
 from .unification.drop_min_threshold import MinThresholdFilter
 from .unification.keep_only_first import KeepOnlyFirstFilter
 
-from .strats.stub import StubFileGenerator
-from .strats.inline import InlineGenerator
-from .strats.eval_inline import EvaluationInlineGenerator
-from .strats.gen import TypeHintGenerator
+from .strategy.stub import StubFileGenerator
+from .strategy.inline import InlineGenerator
+from .strategy.eval_inline import EvaluationInlineGenerator
+from .strategy.gen import TypeHintGenerator
 
 __all__ = [
     DataFileCollector.__name__,

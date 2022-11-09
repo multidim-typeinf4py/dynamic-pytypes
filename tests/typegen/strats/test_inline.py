@@ -1,7 +1,7 @@
 import libcst as cst
 import pathlib
-from typegen.strats.gen import TypeHintGenerator
-from typegen.strats.inline import InlineGenerator
+from typegen.strategy.gen import TypeHintGenerator
+from typegen.strategy.inline import InlineGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 

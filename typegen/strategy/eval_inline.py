@@ -1,4 +1,4 @@
-from typegen.strats.imports import AddImportTransformer
+from typegen.strategy.imports import AddImportTransformer
 from .inline import InlineGenerator, TypeHintTransformer
 import pandas as pd
 import libcst as cst

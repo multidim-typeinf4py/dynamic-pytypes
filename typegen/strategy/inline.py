@@ -13,8 +13,8 @@ import libcst.metadata as metadata
 
 from constants import Column
 from common import TraceDataCategory
-from typegen.strats.gen import TypeHintGenerator
-from typegen.strats.imports import AddImportTransformer
+from typegen.strategy.gen import TypeHintGenerator
+from typegen.strategy.imports import AddImportTransformer
 
 logger = logging.getLogger(__name__)
 

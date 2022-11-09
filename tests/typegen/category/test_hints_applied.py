@@ -3,8 +3,8 @@ import libcst.metadata as metadata
 
 import pandas as pd
 
-from typegen.strats.eval_inline import InlineGenerator
-from typegen.strats.gen import TypeHintGenerator
+from typegen.strategy.eval_inline import InlineGenerator
+from typegen.strategy.gen import TypeHintGenerator
 
 from . import checker, remover
 

@@ -4,10 +4,10 @@ import tempfile
 from mypy import stubgen
 import pandas as pd
 import libcst as cst
-from typegen.strats.gen import TypeHintGenerator
-from typegen.strats.imports import AddImportTransformer
+from typegen.strategy.gen import TypeHintGenerator
+from typegen.strategy.imports import AddImportTransformer
 
-from typegen.strats.inline import TypeHintTransformer
+from typegen.strategy.inline import TypeHintTransformer
 
 
 class ImportUnionTransformer(cst.CSTTransformer):

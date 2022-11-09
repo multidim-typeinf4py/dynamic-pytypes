@@ -1,8 +1,8 @@
 import difflib
 import libcst as cst
 import pathlib
-from typegen.strats.gen import TypeHintGenerator
-from typegen.strats.eval_inline import EvaluationInlineGenerator
+from typegen.strategy.gen import TypeHintGenerator
+from typegen.strategy.eval_inline import EvaluationInlineGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 
