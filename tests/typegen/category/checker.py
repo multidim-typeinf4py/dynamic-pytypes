@@ -49,6 +49,18 @@ class ParameterHintChecker(cst.CSTVisitor):
 
     METHOD_MATCHERS = (
         m.FunctionDef(
+            name=m.Name(value="__init__"),
+            params=m.Parameters(
+                params=[
+                    m.Param(name=m.Name(value="self")),
+                    m.Param(
+                        name=m.Name(value="a"),
+                        annotation=m.Annotation(annotation=m.Name(value="int")),
+                    ),
+                ]
+            ),
+        ),
+        m.FunctionDef(
             name=m.Name(value="method"),
             params=m.Parameters(
                 params=[
@@ -143,6 +155,10 @@ class ReturnHintChecker(cst.CSTVisitor):
 
     METHOD_MATCHERS = (
         m.FunctionDef(
+            name=m.Name("__init__"),
+            returns=m.Annotation(annotation=m.Name(value="None")),
+        ),
+        m.FunctionDef(
             name=m.Name("method"),
             returns=m.Annotation(annotation=m.Name(value="tuple")),
         ),
@@ -176,6 +192,3 @@ class ReturnHintChecker(cst.CSTVisitor):
 
 class AssignHintChecker(cst.CSTVisitor):
     METADATA_DEPENDENCIES = (metadata.ScopeProvider,)
-
-    
-    

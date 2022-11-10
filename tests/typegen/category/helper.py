@@ -6,7 +6,7 @@ import libcst as cst
 import pandas as pd
 import pytest
 
-from tracing.batch import TraceBatch
+from tracing.batch import TraceBatch, TraceUpdateOverride
 
 
 @pytest.fixture
@@ -25,6 +25,9 @@ def function_with_multiline_parameters(
     return int(v)
 
 class Clazz:
+    def __init__(self, a: int) -> None:
+        self.a: int = a
+
     def method(self, a: int, b: str, c: int) -> tuple:
         return a, b, c
 
@@ -40,10 +43,16 @@ class Clazz:
         v: str = f'{a}{b}{c}'
         return int(v)
 
-    a: int = 5
-    b.c: str = "Hello World!"
-    d[e]: bytes = b"Goodbye cruel World!"
-    (e, z, p, zee) = (a, b.c, d[e], b.c)
+a: int = 5
+e: int
+z: str
+p: int
+zee: bytes
+clazz: Clazz
+(e, z, p, zee, clazz) = (a, "Hello World!", 123, b"b.c", Clazz(10))
+
+clazz.a: int = 20
+
     """
     )
 
@@ -88,10 +97,21 @@ def traced() -> pd.DataFrame:
                 "c": (None, str.__name__),
             },
         )
-        .returns(
-            names2types={"function_with_multiline_parameters": (None, int.__name__)}
+        .returns(names2types={"function_with_multiline_parameters": (None, int.__name__)})
+        .local_variables(line_number=10, names2types={"v": (None, str.__name__)})
+        .to_frame()
+    )
+
+    init_method = (
+        TraceBatch(
+            file_name=pathlib.Path("x.py"),
+            class_module="x",
+            class_name="Clazz",
+            function_name="__init__",
+            line_number=14,
         )
-        .local_variables(line_number=10, names2types={"v": str.__name__})
+        .parameters({"a": (None, int.__name__)})
+        .returns({"__init__": (None, "None")})
         .to_frame()
     )
 
@@ -101,7 +121,7 @@ def traced() -> pd.DataFrame:
             class_module="x",
             class_name="Clazz",
             function_name="method",
-            line_number=14,
+            line_number=17,
         )
         .parameters(
             {
@@ -120,7 +140,7 @@ def traced() -> pd.DataFrame:
             class_module="x",
             class_name="Clazz",
             function_name="multiline_method",
-            line_number=17,
+            line_number=20,
         )
         .parameters(
             {
@@ -139,7 +159,7 @@ def traced() -> pd.DataFrame:
             class_module="x",
             class_name="Clazz",
             function_name="function",
-            line_number=25,
+            line_number=27,
         )
         .parameters({"a": (None, "A"), "b": (None, "B"), "c": (None, "C")})
         .returns(names2types={"function": (None, int.__name__)})
@@ -153,8 +173,39 @@ def traced() -> pd.DataFrame:
             class_module=None,
             class_name=None,
             function_name=None,
-            line_number=-1
+            line_number=-1,
         )
+        .local_variables(
+            line_number=1,
+            names2types={"v": (None, str.__name__)},
+            override=TraceUpdateOverride(function_name="function"),
+        )
+        .local_variables(
+            line_number=10,
+            names2types={"v": (None, str.__name__)},
+            override=TraceUpdateOverride(function_name="function_with_multiline_parameters"),
+        )
+        .members(names2types={"a": "int"}, override=TraceUpdateOverride(line_number=15))
+        .local_variables(
+            line_number=26,
+            names2types={"v": (None, str.__name__)},
+            override=TraceUpdateOverride(
+                class_module="x", class_name="Clazz", function_name="function"
+            ),
+        )
+        .local_variables(line_number=29, names2types={"a": (None, int.__name__)})
+        .local_variables(
+            line_number=35,
+            names2types={
+                "e": (None, int.__name__),
+                "z": (None, str.__name__),
+                "p": (None, int.__name__),
+                "zee": (None, bytes.__name__),
+                "clazz": ("x", "Clazz"),
+            },
+        )
+        .members(names2types={"a": "int"}, override=TraceUpdateOverride(line_number=37))
+        .to_frame()
     )
 
     cst.BaseAssignTargetExpression
@@ -163,9 +214,11 @@ def traced() -> pd.DataFrame:
         [
             function,
             function_with_multiline_parameters,
+            init_method,
             method,
             multiline_method,
             function_method,
+            assign_exprs,
         ],
         ignore_index=True,
     )
