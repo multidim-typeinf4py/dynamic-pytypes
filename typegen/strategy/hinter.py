@@ -50,7 +50,6 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
         for name, group in df.groupby(
             by=Column.FUNCNAME,
             sort=False,
-            dropna=False,
         ):
             param_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_PARAMETER]
             params = [
@@ -62,7 +61,7 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
             ]
 
             returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
-            assert len(returns_df) == 1
+            assert len(returns_df) == 1, f"Found multiple hints for function `{name}`: {returns_df}"
             returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
             key = FunctionKey.make(name=name, params=cst.Parameters(params))
@@ -97,10 +96,11 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
                 params.insert(0, cst.Param(name=cst.Name(value="self")))
 
             returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
-            assert len(returns_df) == 1
+            name = f"{cname}.{fname}"
+            assert len(returns_df) == 1, f"Found multiple hints for method `{name}`: {returns_df}"
             returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
-            key = FunctionKey.make(name=f"{cname}.{fname}", params=cst.Parameters(params))
+            key = FunctionKey.make(name=name, params=cst.Parameters(params))
             value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
 
             d[key] = value
