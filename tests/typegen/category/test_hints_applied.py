@@ -1,12 +1,13 @@
 import libcst as cst
+import libcst.codemod as codemod
 import libcst.metadata as metadata
 
 import pandas as pd
 
-from typegen.strategy.eval_inline import InlineGenerator
-from typegen.strategy.gen import TypeHintGenerator
+from typegen.strategy import remover
+from typegen.strategy.inline import RetentiveInlineGenerator
 
-from . import checker, remover
+from . import checker
 
 
 import pytest
@@ -16,47 +17,35 @@ from .helper import traced, typed
 import difflib
 
 
-GENERATOR = TypeHintGenerator(
-    ident=InlineGenerator.ident,
-    types=pd.DataFrame(),
-)
-
-
 @pytest.mark.parametrize(
     argnames=["chckr", "rmvr"],
     argvalues=[
         (checker.ParameterHintChecker(), remover.ParameterHintRemover()),
         (checker.ReturnHintChecker(), remover.ReturnHintRemover()),
-        (checker.AssignHintChecker(), remover.AssignHintRemover())
+        (checker.AssignHintChecker(), remover.AssignHintRemover()),
     ],
 )
 def test_category_hinting(
-    typed: metadata.MetadataWrapper,
+    typed: cst.Module,
     traced: pd.DataFrame,
     chckr: cst.CSTVisitor,
     rmvr: cst.CSTTransformer,
 ):
     # Test original passes checks
-    typed.visit(chckr)
+    metadata.MetadataWrapper(typed).visit(chckr)
 
     # Remove type hints
-    removed = typed.visit(rmvr)
-    assert removed.code != typed.module.code
+    removed = metadata.MetadataWrapper(typed).visit(rmvr)
+    assert removed.code != typed.code
 
     # Generate type hints
-    reinserted = GENERATOR._gen_hinted_ast(
-        applicable=traced,
-        module=removed,
-    )
+    generator = RetentiveInlineGenerator(context=codemod.CodemodContext(), traced=traced)
+    reinserted = generator.transform_module(tree=removed)
 
     print(chckr.__class__.__qualname__)
     print(
         "HINTING:",
-        "".join(
-            difflib.unified_diff(
-                removed.code.splitlines(1), reinserted.code.splitlines(1)
-            )
-        ),
+        "".join(difflib.unified_diff(removed.code.splitlines(1), reinserted.code.splitlines(1))),
         sep="\n",
     )
 

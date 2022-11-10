@@ -1,8 +1,8 @@
 import difflib
 import libcst as cst
 import pathlib
-from typegen.strategy.gen import TypeHintGenerator
-from typegen.strategy.eval_inline import EvaluationInlineGenerator
+from typegen.strategy.gen import AnnotationGenerator
+from typegen.strategy.inline import BruteInlineGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 
@@ -13,10 +13,10 @@ def load_cst_module(path: pathlib.Path) -> cst.Module:
 
 
 def test_factory():
-    gen = TypeHintGenerator(ident=EvaluationInlineGenerator.ident, types=pd.DataFrame())
+    gen = AnnotationGenerator(ident=BruteInlineGenerator.ident, types=pd.DataFrame())
     assert (
-        type(gen) is EvaluationInlineGenerator
-    ), f"{type(gen)} should be {EvaluationInlineGenerator.__name__}"
+        type(gen) is BruteInlineGenerator
+    ), f"{type(gen)} should be {BruteInlineGenerator.__name__}"
 
 
 def test_inline_generator_generates_expected_content(get_test_data):
@@ -31,8 +31,8 @@ def test_inline_generator_generates_expected_content(get_test_data):
 
         print(f"Working on {resource_path}")
 
-        gen = TypeHintGenerator(
-            ident=EvaluationInlineGenerator.ident, types=pd.DataFrame()
+        gen = AnnotationGenerator(
+            ident=BruteInlineGenerator.ident, types=pd.DataFrame()
         )
         hinted = gen._gen_hinted_ast(
             applicable=sample_trace_data, module=load_cst_module(resource_path)

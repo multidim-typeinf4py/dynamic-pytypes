@@ -3,7 +3,7 @@ import pathlib
 from constants import Schema
 from common import TraceDataCategory
 from typegen.strategy.stub import StubFileGenerator
-from typegen.strategy.gen import TypeHintGenerator
+from typegen.strategy.gen import AnnotationGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 
@@ -15,7 +15,7 @@ def load_cst_module(path: pathlib.Path) -> cst.Module:
 
 
 def test_factory():
-    gen = TypeHintGenerator(ident=StubFileGenerator.ident, types=pd.DataFrame())
+    gen = AnnotationGenerator(ident=StubFileGenerator.ident, types=pd.DataFrame())
     assert isinstance(
         gen, StubFileGenerator
     ), f"{type(gen)} should be {StubFileGenerator.__name__}"
@@ -29,7 +29,7 @@ def test_stub_file_generator_generates_expected_content(get_test_data):
         expected_stub_file_content = test_element[4]
         assert resource_path.is_file()
 
-        gen = TypeHintGenerator(ident=StubFileGenerator.ident, types=pd.DataFrame())
+        gen = AnnotationGenerator(ident=StubFileGenerator.ident, types=pd.DataFrame())
         hinted = gen._gen_hinted_ast(
             applicable=sample_trace_data, module=load_cst_module(resource_path)
         )
@@ -70,7 +70,7 @@ def test_stub_file_generator_generates_file_with_correct_content_with_union_impo
         None,
     ]
 
-    gen = TypeHintGenerator(ident=StubFileGenerator.ident, types=empty_trace_data)
+    gen = AnnotationGenerator(ident=StubFileGenerator.ident, types=empty_trace_data)
     hinted = gen._gen_hinted_ast(
         applicable=empty_trace_data, module=load_cst_module(resource_path)
     )
@@ -104,7 +104,7 @@ def test_stub_file_generator_generates_file_with_correct_content_with_custom_uni
         None,
     ]
 
-    gen = TypeHintGenerator(ident=StubFileGenerator.ident, types=empty_trace_data)
+    gen = AnnotationGenerator(ident=StubFileGenerator.ident, types=empty_trace_data)
     hinted = gen._gen_hinted_ast(
         applicable=empty_trace_data, module=load_cst_module(resource_path)
     )

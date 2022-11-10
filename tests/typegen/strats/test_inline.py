@@ -1,7 +1,7 @@
 import libcst as cst
 import pathlib
-from typegen.strategy.gen import TypeHintGenerator
-from typegen.strategy.inline import InlineGenerator
+from typegen.strategy.gen import AnnotationGenerator
+from typegen.strategy.old_inline import InlineGenerator
 from tests.typegen.strats._sample_data import get_test_data
 import pandas as pd
 
@@ -14,7 +14,7 @@ def load_cst_module(path: pathlib.Path) -> cst.Module:
 
 
 def test_factory():
-    gen = TypeHintGenerator(ident=InlineGenerator.ident, types=pd.DataFrame())
+    gen = AnnotationGenerator(ident=InlineGenerator.ident, types=pd.DataFrame())
     assert (
         type(gen) is InlineGenerator
     ), f"{type(gen)} should be {InlineGenerator.__name__}"
@@ -27,7 +27,7 @@ def test_inline_generator_generates_expected_content(get_test_data):
         expected_inline_content = test_element[2]
         assert resource_path.is_file()
 
-        gen = TypeHintGenerator(ident=InlineGenerator.ident, types=pd.DataFrame())
+        gen = AnnotationGenerator(ident=InlineGenerator.ident, types=pd.DataFrame())
         hinted = gen._gen_hinted_ast(
             applicable=sample_trace_data, module=load_cst_module(resource_path)
         )

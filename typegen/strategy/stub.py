@@ -4,10 +4,11 @@ import tempfile
 from mypy import stubgen
 import pandas as pd
 import libcst as cst
-from typegen.strategy.gen import TypeHintGenerator
-from typegen.strategy.imports import AddImportTransformer
 
-from typegen.strategy.inline import TypeHintTransformer
+from . import AnnotationGenerator
+from .imports import AddImportTransformer
+
+from typegen.strategy.old_inline import TypeHintTransformer
 
 
 class ImportUnionTransformer(cst.CSTTransformer):
@@ -92,7 +93,7 @@ class MyPyHintTransformer(cst.CSTTransformer):
             return cst.parse_module(stub_file_content)
 
 
-class StubFileGenerator(TypeHintGenerator):
+class StubFileGenerator(AnnotationGenerator):
     """Generates stub files using mypy.stubgen."""
 
     ident = "stub"

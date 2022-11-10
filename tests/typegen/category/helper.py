@@ -2,7 +2,6 @@ import pathlib
 import textwrap
 
 import libcst as cst
-import libcst.metadata as metadata
 
 import pandas as pd
 import pytest
@@ -11,7 +10,7 @@ from tracing.batch import TraceBatch
 
 
 @pytest.fixture
-def typed() -> metadata.MetadataWrapper:
+def typed() -> cst.Module:
     text = textwrap.dedent(
         """def function(a: int, b: str, c: int) -> int:
     v: str = f'{a}{b}{c}'
@@ -49,7 +48,7 @@ class Clazz:
     )
 
     module = cst.parse_module(text)
-    return metadata.MetadataWrapper(module)
+    return module
 
 
 @pytest.fixture
