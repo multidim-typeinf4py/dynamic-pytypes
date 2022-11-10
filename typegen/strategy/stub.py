@@ -1,5 +1,6 @@
 import pathlib
 import tempfile
+import typing
 
 from mypy import stubgen
 import pandas as pd
@@ -7,12 +8,12 @@ import libcst as cst
 
 from . import AnnotationGenerator
 from .imports import AddImportTransformer
-
-from typegen.strategy.old_inline import TypeHintTransformer
+from .hinter import TypeHintApplier
 
 
 class ImportUnionTransformer(cst.CSTTransformer):
     """Transforms the CST by adding the ImportFrom node (from typing import Union) if the corresponding code contains a union type hint."""
+
     def __init__(self):
         self.requires_union_import = False
 
@@ -54,9 +55,8 @@ class ImportUnionTransformer(cst.CSTTransformer):
 
 class MyPyHintTransformer(cst.CSTTransformer):
     """Replaces the CST with the corresponding stub CST, generated using mypy.stubgen."""
-    def leave_Module(
-        self, _: cst.Module, updated_node: cst.Module
-    ) -> cst.Module:
+
+    def leave_Module(self, _: cst.Module, updated_node: cst.Module) -> cst.Module:
         # Store inline hinted ast in temporary file so that mypy can
         # extract our applied hints to it
         with tempfile.NamedTemporaryFile() as temphinted, tempfile.NamedTemporaryFile() as tempstub:
@@ -98,16 +98,10 @@ class StubFileGenerator(AnnotationGenerator):
 
     ident = "stub"
 
-    def _transformers(
-        self, module_path: str, applicable: pd.DataFrame
-    ) -> list[cst.CSTTransformer]:
-        return [
-            TypeHintTransformer(module_path, applicable),
-            AddImportTransformer(applicable),
+    def transformers(self) -> typing.Iterator[cst.CSTTransformer]:
+        yield from (
+            TypeHintApplier(context=self.context, traced=self.traced),
+            AddImportTransformer(context=self.context, traced=self.traced),
             MyPyHintTransformer(),
             ImportUnionTransformer(),
-        ]
-
-    def _store_hinted_ast(self, source_file: pathlib.Path, hinting: cst.Module) -> None:
-        with source_file.with_suffix(".pyi").open("w") as f:
-            f.write(hinting.code)
+        )
