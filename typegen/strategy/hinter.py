@@ -32,7 +32,7 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
                 attributes=dict(),
                 class_definitions=dict(),
                 typevars=dict(),
-                names=dict(),
+                names=set(),
             ),
             use_future_annotations=True,
         )

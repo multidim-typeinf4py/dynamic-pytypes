@@ -11,7 +11,7 @@ from .remover import HintRemover
 class BruteInlineGenerator(AnnotationGenerator):
     """Overwrites the files by removing the existing and then adding the traced type hints."""
 
-    ident = "brute_inline"
+    ident = "brute"
 
     def transformers(self) -> typing.Iterator[cst.CSTTransformer]:
         yield from (
@@ -24,7 +24,7 @@ class BruteInlineGenerator(AnnotationGenerator):
 class RetentiveInlineGenerator(AnnotationGenerator):
     """Adds annotations only where they are missing"""
 
-    ident = "ret_inline"
+    ident = "retentive"
 
     def transformers(self) -> typing.Iterator[cst.CSTTransformer]:
         yield from (
