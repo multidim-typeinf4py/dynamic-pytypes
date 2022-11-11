@@ -215,7 +215,7 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "libcst"
-version = "0.1.dev927+g1ff16e9"
+version = "0.1.dev929+g0046375"
 description = "A concrete syntax tree with AST-like properties for Python 3.5, 3.6, 3.7, 3.8, 3.9, and 3.10 programs."
 category = "main"
 optional = false
@@ -234,7 +234,7 @@ dev = ["Sphinx (>=5.1.1)", "black (==22.10.0)", "coverage (>=4.5.4)", "fixit (==
 type = "git"
 url = "https://github.com/multidim-typeinf4py/LibCST.git"
 reference = "main"
-resolved_reference = "00463756eb2e78aa301d1590589e034d8407fb43"
+resolved_reference = "24481dc533361f8fa7c6b157ac3853209682b367"
 
 [[package]]
 name = "Markdown"
