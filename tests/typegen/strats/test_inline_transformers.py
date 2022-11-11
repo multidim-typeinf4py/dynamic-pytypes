@@ -1,5 +1,5 @@
 import libcst as cst
-from typegen.strategy.inline import RemoveAllTypeHintsTransformer
+from typegen.strategy.remover import HintRemover
 
 
 def test_remove_all_hints_transformer_removes_all_hints():
@@ -27,7 +27,7 @@ def test_remove_all_hints_transformer_removes_all_hints():
 """
 
     ast = cst.parse_module(source=code)
-    test_object = RemoveAllTypeHintsTransformer()
+    test_object = HintRemover()
     ast_without_hints = ast.visit(test_object)
 
     assert expected_code == ast_without_hints.code
