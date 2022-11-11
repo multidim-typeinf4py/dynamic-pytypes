@@ -150,6 +150,6 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
                     )
                 )
 
-            d[cname] = cst.ClassDef(name=cst.Name(cname), body=[cst.IndentedBlock(body=hints)])
+            d[cname] = cst.ClassDef(name=cst.Name(cname), body=cst.IndentedBlock(body=hints))
 
         return d
