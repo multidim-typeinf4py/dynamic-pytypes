@@ -19,8 +19,7 @@ class AddImportTransformer(cst.CSTTransformer):
         self.traced = traced.copy()
 
     def leave_Module(self, _: cst.Module, tree: cst.Module) -> cst.Module:
-        from libcst.codemod.visitors._imports import ImportItem
-        from libcst.codemod.visitors._add_imports import AddImportsVisitor
+        from libcst.codemod.visitors._add_imports import AddHintableImportsVisitor
 
         def file2module(file: str) -> str:
             return os.path.splitext(file.replace(os.path.sep, "."))[0]
@@ -42,7 +41,6 @@ class AddImportTransformer(cst.CSTTransformer):
             by=[Column.VARTYPE_MODULE, Column.VARTYPE], sort=False, dropna=False
         )
 
-        items: list[ImportItem] = []
         for _, group in importables:
             modules = group[Column.VARTYPE_MODULE].values[0]
             types = group[Column.VARTYPE].values[0]
@@ -51,7 +49,9 @@ class AddImportTransformer(cst.CSTTransformer):
             types = types.split(" | ")
 
             for module, ty in zip(modules, types):
-                items.append(ImportItem(module_name=module, obj_name=ty))
+                AddHintableImportsVisitor.add_needed_import(
+                    context=self.context, module=module, obj=ty, for_type_hint=True
+                )
 
-        add_imports_visitor = AddImportsVisitor(context=self.context, imports=items)
+        add_imports_visitor = AddHintableImportsVisitor(context=self.context)
         return add_imports_visitor.transform_module(tree)
