@@ -32,14 +32,23 @@ def test_category_hinting(
     rmvr: cst.CSTTransformer,
 ):
     # Test original passes checks
-    metadata.MetadataWrapper(typed).visit(chckr)
+    try:
+        metadata.MetadataWrapper(typed).visit(chckr)
+    except Exception as e:
+        raise Exception("Original AST failed to pass checks!") from e
 
     # Remove type hints
     removed = metadata.MetadataWrapper(typed).visit(rmvr)
     assert removed.code != typed.code
+    print(
+        "REMOVAL:",
+        "".join(difflib.unified_diff(typed.code.splitlines(1), removed.code.splitlines(1))),
+        sep="\n",
+    ),
 
     # Generate type hints
-    generator = RetentiveInlineGenerator(context=codemod.CodemodContext(), traced=traced)
+    context = codemod.CodemodContext(filename="x.py", full_module_name="x", full_package_name="x")
+    generator = RetentiveInlineGenerator(context=context, traced=traced)
     reinserted = generator.transform_module(tree=removed)
 
     print(chckr.__class__.__qualname__)
@@ -50,4 +59,8 @@ def test_category_hinting(
     )
 
     # Check inferred
-    metadata.MetadataWrapper(reinserted).visit(chckr)
+    try:
+        metadata.MetadataWrapper(reinserted).visit(chckr)
+    except Exception as e:
+        raise Exception("Reinserted AST failed to pass checks") from e
+

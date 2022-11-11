@@ -22,19 +22,21 @@ def _create_annotation(vartype: str) -> cst.Annotation:
 class TypeHintApplier(codemod.ContextAwareTransformer):
     def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
         super().__init__(context)
-        self.traced = traced
+        self.traced = traced[traced[Column.FILENAME] == self.context.filename]
 
     def leave_Module(self, _: cst.Module, updated_node: cst.Module) -> cst.Module:
         visitor = ApplyTypeAnnotationsVisitor(
             context=self.context,
             annotations=Annotations(
                 functions=self.functions() | self.methods(),
-                attributes=dict(),
-                class_definitions=dict(),
+                attributes=self.globals() | self.locals(),
+                class_definitions=self.members(),
                 typevars=dict(),
                 names=set(),
             ),
             use_future_annotations=True,
+            handle_function_bodies=True,
+            create_class_attributes=True,
         )
 
         return visitor.transform_module(updated_node)
@@ -44,7 +46,6 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
         df = self.traced[
             self.traced[Column.CLASS_MODULE].isnull() & self.traced[Column.CLASS].isnull()
         ]
-
         d: dict[FunctionKey, FunctionAnnotation] = dict()
 
         for name, group in df.groupby(
@@ -104,4 +105,46 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
             value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
 
             d[key] = value
+        return d
+
+    def globals(self) -> dict[str, cst.Annotation]:
+        df = self.traced[(self.traced[Column.CATEGORY] == TraceDataCategory.GLOBAL_VARIABLE)]
+        d: dict[str, cst.Annotation] = dict()
+
+        for vname, group in df.groupby(by=Column.VARNAME, sort=False, dropna=False):
+            assert len(group) == 1, f"Found multiple hints for {vname} - {group}"
+            d[vname] = _create_annotation(group[Column.VARTYPE].iloc[0])
+
+        return d
+
+    def locals(self) -> dict[str, cst.Annotation]:
+        df = self.traced[(self.traced[Column.CATEGORY] == TraceDataCategory.LOCAL_VARIABLE)]
+        d: dict[str, cst.Annotation] = dict()
+
+        for fname, group in df.groupby(by=Column.FUNCNAME, sort=False, dropna=False):
+            for cname, vname, vtype in group[[Column.CLASS, Column.VARNAME, Column.VARTYPE]].itertuples(index=False):
+                name = f"{fname}.{vname}" if pd.isnull(cname) else f"{cname}.{fname}.{vname}"
+                d[name] = _create_annotation(vtype)
+
+        return d
+
+    def members(self) -> dict[str, cst.ClassDef]:
+        df = self.traced[self.traced[Column.CATEGORY] == TraceDataCategory.CLASS_MEMBER]
+        d: dict[str, cst.ClassDef] = dict()
+
+        for cname, group in df.groupby(by=Column.CLASS, sort=False, dropna=True):
+            hints: list[cst.BaseStatement] = list()
+            for vname, vtype in group[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False):
+                hints.append(
+                    cst.SimpleStatementLine(
+                        body=[
+                            cst.AnnAssign(
+                                target=cst.Name(value=vname), annotation=_create_annotation(vtype)
+                            )
+                        ]
+                    )
+                )
+
+            d[cname] = cst.ClassDef(name=cst.Name(cname), body=[cst.IndentedBlock(body=hints)])
+
         return d
