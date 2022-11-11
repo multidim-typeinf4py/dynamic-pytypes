@@ -205,8 +205,6 @@ def traced() -> pd.DataFrame:
         .to_frame()
     )
 
-    cst.BaseAssignTargetExpression
-
     return pd.concat(
         [
             function,
