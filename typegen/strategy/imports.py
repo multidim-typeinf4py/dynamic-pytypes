@@ -41,10 +41,7 @@ class AddImportTransformer(cst.CSTTransformer):
             by=[Column.VARTYPE_MODULE, Column.VARTYPE], sort=False, dropna=False
         )
 
-        for _, group in importables:
-            modules = group[Column.VARTYPE_MODULE].values[0]
-            types = group[Column.VARTYPE].values[0]
-
+        for (modules, types), _ in importables:
             modules = modules.split(",")
             types = types.split(" | ")
 
