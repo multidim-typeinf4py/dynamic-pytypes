@@ -16,8 +16,8 @@ class BruteInlineGenerator(AnnotationGenerator):
     def transformers(self) -> typing.Iterator[cst.CSTTransformer]:
         yield from (
             HintRemover(),
-            TypeHintApplier(context=self.context, traced=self.traced),
             AddImportTransformer(context=self.context, traced=self.traced),
+            TypeHintApplier(context=self.context, traced=self.traced),
         )
 
 
@@ -28,6 +28,6 @@ class RetentiveInlineGenerator(AnnotationGenerator):
 
     def transformers(self) -> typing.Iterator[cst.CSTTransformer]:
         yield from (
-            TypeHintApplier(context=self.context, traced=self.traced),
             AddImportTransformer(context=self.context, traced=self.traced),
+            TypeHintApplier(context=self.context, traced=self.traced),
         )

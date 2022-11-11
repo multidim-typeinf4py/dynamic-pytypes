@@ -22,7 +22,10 @@ def _create_annotation(vartype: str) -> cst.Annotation:
 class TypeHintApplier(codemod.ContextAwareTransformer):
     def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
         super().__init__(context)
-        self.traced = traced[traced[Column.FILENAME] == self.context.filename]
+        if context.filename:
+            self.traced = traced[traced[Column.FILENAME] == self.context.filename]
+        else:
+            self.traced = traced
 
     def leave_Module(self, _: cst.Module, updated_node: cst.Module) -> cst.Module:
         visitor = ApplyTypeAnnotationsVisitor(
@@ -97,14 +100,16 @@ class TypeHintApplier(codemod.ContextAwareTransformer):
                 params.insert(0, cst.Param(name=cst.Name(value="self")))
 
             returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
-            name = f"{cname}.{fname}"
-            assert len(returns_df) == 1, f"Found multiple hints for method `{name}`: {returns_df}"
-            returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
+            if not returns_df.empty:
+                name = f"{cname}.{fname}"
 
-            key = FunctionKey.make(name=name, params=cst.Parameters(params))
-            value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
+                assert len(returns_df) == 1, f"Found multiple hints for method `{name}`: {returns_df}"
+                returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
-            d[key] = value
+                key = FunctionKey.make(name=name, params=cst.Parameters(params))
+                value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
+
+                d[key] = value
         return d
 
     def globals(self) -> dict[str, cst.Annotation]:
