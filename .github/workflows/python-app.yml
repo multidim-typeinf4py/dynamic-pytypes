@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    if: github.event.pull_request.draft == 'false'
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:
@@ -22,11 +22,6 @@ jobs:
       with:
         fetch-depth: 1
         submodules: 'true'
-
-    - name: Update Submodules
-      run: |
-        git pull --recurse-submodules
-        git submodule update --remote --recursive
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
