@@ -20,10 +20,12 @@ from .unification.union import UnionFilter
 from .unification.drop_min_threshold import MinThresholdFilter
 from .unification.keep_only_first import KeepOnlyFirstFilter
 
-from .strategy import AnnotationGeneratorApplier
+from .strategy import AnnotationGenStratApplier
 
 from .strategy.stub import StubFileGenerator
 from .strategy.inline import BruteInlineGenerator, RetentiveInlineGenerator
+
+from .strategy.hinter import LibCSTTypeHintApplier, PyTypesTypeHintApplier
 
 from typegen.trace_data_file_collector import TraceDataFileCollector, DataFileCollector
 
@@ -62,8 +64,8 @@ __all__ = [
     required=False,
 )
 @click.option(
-    "-g",
-    "--gen-strat",
+    "-s",
+    "--strat",
     help="Select a strategy for generating type hints",
     type=click.Choice(
         [
@@ -81,6 +83,18 @@ __all__ = [
     required=True,
 )
 @click.option(
+    "-i",
+    "--impl",
+    help="Select an implementation for interpreting the traced data during hinting",
+    type=click.Choice(
+        [LibCSTTypeHintApplier.ident, PyTypesTypeHintApplier.ident], case_sensitive=False
+    ),
+    callback=lambda ctx, _, val: {
+        LibCSTTypeHintApplier.ident: LibCSTTypeHintApplier,
+        PyTypesTypeHintApplier.ident: PyTypesTypeHintApplier,
+    }[val],
+)
+@click.option(
     "-v",
     "--verbose",
     help="DEBUG if not given, else CRITICAL",
@@ -90,10 +104,11 @@ __all__ = [
     default=False,
 )
 def main(**params):
-    projpath, verb, gen_strat, unifiers = (
+    projpath, verb, gen_strat, genimpl, unifiers = (
         params["path"],
         params["verbose"],
         params["gen_strat"],
+        params["impl"],
         params["unifiers"],
     )
 
@@ -137,15 +152,16 @@ def main(**params):
 
     print(f"Shape of filtered trace data: {filtered.shape}")
 
-    result = cli.parallel_exec_transform_with_prettyprint(
-        transform=AnnotationGeneratorApplier(
+    result = codemod.parallel_exec_transform_with_prettyprint(
+        transform=AnnotationGenStratApplier(
             context=codemod.CodemodContext(),
-            generator_kind=gen_strat,
+            generator_strategy=gen_strat,
+            annotation_provider=genimpl,
             traced=td_df,
         ),
         files=cli.gather_files(pytypes_cfg.pytypes.proj_path),
         jobs=1,
-        blacklist_patterns=["__init__.py", "*.pyi"],
+        blacklist_patterns=["__init__.py"],
         repo_root=str(pytypes_cfg.pytypes.proj_path),
     )
 
