@@ -1,11 +1,13 @@
+import typing
 import libcst as cst
 import libcst.codemod as codemod
 import libcst.metadata as metadata
 
 import pandas as pd
 
+from typegen.strategy import hinter
 from typegen.strategy import remover
-from typegen.strategy.inline import RetentiveInlineGenerator
+from typegen.strategy import inline
 
 from . import checker
 
@@ -25,9 +27,14 @@ import difflib
         (checker.AssignHintChecker(), remover.AssignHintRemover()),
     ],
 )
+@pytest.mark.parametrize(
+    argnames=["provider"],
+    argvalues=[(hinter.LibCSTTypeHintApplier,), (hinter.PyTypesTypeHintApplier,)],
+)
 def test_category_hinting(
     typed: cst.Module,
     traced: pd.DataFrame,
+    provider: typing.Type[hinter.AnnotationProvider],
     chckr: cst.CSTVisitor,
     rmvr: cst.CSTTransformer,
 ):
@@ -35,7 +42,9 @@ def test_category_hinting(
     try:
         metadata.MetadataWrapper(typed).visit(chckr)
     except Exception as e:
-        raise Exception("Original AST failed to pass checks!") from e
+        raise Exception(
+            f"Original AST failed to pass checks! - Config: {provider.__qualname__}, {chckr.__class__.__name__}, {rmvr.__class__.__name__}"
+        ) from e
 
     # Remove type hints
     removed = metadata.MetadataWrapper(typed).visit(rmvr)
@@ -48,7 +57,7 @@ def test_category_hinting(
 
     # Generate type hints
     context = codemod.CodemodContext(filename="x.py", full_module_name="x", full_package_name="x")
-    generator = RetentiveInlineGenerator(context=context, traced=traced)
+    generator = inline.RetentiveInlineGenerator(context=context, provider=provider, traced=traced)
     reinserted = generator.transform_module(tree=removed)
 
     print(chckr.__class__.__qualname__)
@@ -62,5 +71,6 @@ def test_category_hinting(
     try:
         metadata.MetadataWrapper(reinserted).visit(chckr)
     except Exception as e:
-        raise Exception("Reinserted AST failed to pass checks") from e
-
+        raise Exception(
+            f"Reinserted AST failed to pass checks! - Config: {provider.__qualname__}, {chckr.__class__.__name__}, {rmvr.__class__.__name__}"
+        ) from e

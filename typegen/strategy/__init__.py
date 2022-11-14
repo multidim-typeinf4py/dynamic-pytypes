@@ -8,14 +8,19 @@ import pandas as pd
 
 from constants import Column
 
+from .hinter import AnnotationProvider
 
-class AnnotationGenerator(codemod.Codemod):
+
+class AnnotationGeneratorStrategy(codemod.Codemod):
     """Base class for different generation styles of type hints,
     including where the result is to be stored"""
 
-    def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
+    def __init__(
+        self, context: codemod.CodemodContext, provider: typing.Type[AnnotationProvider], traced: pd.DataFrame
+    ) -> None:
         super().__init__(context=context)
         self.traced = traced
+        self.provider = provider
 
     def transform_module_impl(self, tree: cst.Module) -> cst.Module:
         return functools.reduce(
@@ -34,21 +39,26 @@ class AnnotationGenerator(codemod.Codemod):
         pass
 
 
-class AnnotationGeneratorApplier(codemod.Codemod):
+class AnnotationGenStratApplier(codemod.Codemod):
     def __init__(
         self,
         context: codemod.CodemodContext,
-        generator_kind: typing.Type[AnnotationGenerator],
+        generator_strategy: typing.Type[AnnotationGeneratorStrategy],
+        annotation_provider: typing.Type[AnnotationProvider],
         traced: pd.DataFrame,
     ) -> None:
         super().__init__(context=context)
-        self.generator_kind = generator_kind
+        self.generator_kind = generator_strategy
+        self.impl_kind = annotation_provider
         self.traced = traced
 
     def transform_module_impl(self, tree: cst.Module) -> cst.Module:
-        relevant = self.traced[
-            self.traced[Column.FILENAME] == str(self.context.filename)
-        ]
+        if self.context.filename is not None:
+            relevant = self.traced[self.traced[Column.FILENAME] == str(self.context.filename)]
+        else:
+            relevant = self.traced
+
+        impl = self.impl_kind(context=self.context, traced=relevant)
         generator = self.generator_kind(
             context=self.context,
             traced=relevant,
@@ -58,6 +68,6 @@ class AnnotationGeneratorApplier(codemod.Codemod):
 
 
 __all__ = [
-    AnnotationGenerator.__name__,
-    AnnotationGeneratorApplier.__name__,
+    AnnotationGeneratorStrategy.__name__,
+    AnnotationGenStratApplier.__name__,
 ]

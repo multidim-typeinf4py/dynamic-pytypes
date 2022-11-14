@@ -97,7 +97,6 @@ def traced() -> pd.DataFrame:
             },
         )
         .returns(names2types={"function_with_multiline_parameters": (None, int.__name__)})
-        .local_variables(line_number=10, names2types={"v": (None, str.__name__)})
         .to_frame()
     )
 
@@ -163,7 +162,7 @@ def traced() -> pd.DataFrame:
         )
         .parameters({"a": (None, "A"), "b": (None, "B"), "c": (None, "C")})
         .returns(names2types={"function": (None, int.__name__)})
-        .local_variables(line_number=26, names2types={"v": (None, str.__name__)})
+        .local_variables(line_number=29, names2types={"v": (None, str.__name__)})
         .to_frame()
     )
 

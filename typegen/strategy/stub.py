@@ -6,9 +6,9 @@ from mypy import stubgen
 import pandas as pd
 import libcst as cst
 
-from . import AnnotationGenerator
+from . import AnnotationGeneratorStrategy
 from .imports import AddImportTransformer
-from .hinter import TypeHintApplier
+from .hinter import LibCSTTypeHintApplier
 
 
 class ImportUnionTransformer(cst.CSTTransformer):
@@ -93,14 +93,14 @@ class MyPyHintTransformer(cst.CSTTransformer):
             return cst.parse_module(stub_file_content)
 
 
-class StubFileGenerator(AnnotationGenerator):
+class StubFileGenerator(AnnotationGeneratorStrategy):
     """Generates stub files using mypy.stubgen."""
 
     ident = "stub"
 
     def transformers(self) -> typing.Iterator[cst.CSTTransformer]:
         yield from (
-            TypeHintApplier(context=self.context, traced=self.traced),
+            self.provider(context=self.context, traced=self.traced),
             AddImportTransformer(context=self.context, traced=self.traced),
             MyPyHintTransformer(),
             ImportUnionTransformer(),

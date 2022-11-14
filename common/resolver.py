@@ -47,6 +47,7 @@ class Resolver:
 
     :raises ValueError: If any of the three specified paths is not a directory
     """
+
     stdlib_path: pathlib.Path
     proj_path: pathlib.Path
     venv_path: pathlib.Path
@@ -54,20 +55,14 @@ class Resolver:
     def __post_init__(self):
         for path in (self.stdlib_path, self.proj_path, self.venv_path):
             if not path.is_dir():
-                raise ValueError(
-                    f"{path} is not a directory; Please check your config file"
-                )
+                raise ValueError(f"{path} is not a directory; Please check your config file")
 
     @functools.cached_property
     def site_packages(self) -> pathlib.Path:
         major, minor = sys.version_info[:2]
-        site_packages = (
-            self.venv_path / "lib" / f"python{major}.{minor}" / "site-packages"
-        )
+        site_packages = self.venv_path / "lib" / f"python{major}.{minor}" / "site-packages"
         if not self.venv_path.is_dir():
-            raise ValueError(
-                f"Could not find site-packages directory at {site_packages}"
-            )
+            raise ValueError(f"Could not find site-packages directory at {site_packages}")
         return site_packages
 
     def type_lookup(
@@ -96,21 +91,17 @@ class Resolver:
             lookup_path = pathlib.Path(module_name.replace(".", os.path.sep) + ".py")
 
             # 1. project path
-            logger.debug(f"{(module_name, type_name)} as project path?")
+            # logger.debug(f"{(module_name, type_name)} as project path?")
             module = _attempt_module_lookup(module_name, self.proj_path, lookup_path)
             if module is None:
                 # 2. stdlib
-                logger.debug(f"{(module_name, type_name)} as stdlib?")
-                module = _attempt_module_lookup(
-                    module_name, self.stdlib_path, lookup_path
-                )
+                # logger.debug(f"{(module_name, type_name)} as stdlib?")
+                module = _attempt_module_lookup(module_name, self.stdlib_path, lookup_path)
 
             if module is None:
                 # 3. venv
-                logger.debug(f"{(module_name, type_name)} as venv dep?")
-                module = _attempt_module_lookup(
-                    module_name, self.site_packages, lookup_path
-                )
+                # logger.debug(f"{(module_name, type_name)} as venv dep?")
+                module = _attempt_module_lookup(module_name, self.site_packages, lookup_path)
 
             if module is None:
                 logger.warning(
@@ -132,8 +123,8 @@ class Resolver:
         """
         # 0. builtin types
         module = sys.modules[ty.__module__]
-        logger.debug(f"{(module.__name__, ty.__name__)} as builtin?")
         if module.__name__ == "builtins":
+            logger.info(f"{(module.__name__, ty.__name__)} is builtin")
             return None, ty.__qualname__
 
         # Special case:
@@ -148,19 +139,17 @@ class Resolver:
 
         # 1. project path
         if module_file.is_relative_to(self.proj_path):
-            logger.debug(
-                f"{(module.__name__, ty.__qualname__)} is relative to project path"
-            )
+            logger.info(f"{(module.__name__, ty.__qualname__)} is relative to project path")
             rel_path = module_file.relative_to(self.proj_path)
 
         # 2. stdlib
         elif module_file.is_relative_to(self.stdlib_path):
-            logger.debug(f"{(module.__name__, ty.__qualname__)} is relative to stdlib path")
+            logger.info(f"{(module.__name__, ty.__qualname__)} is relative to stdlib path")
             rel_path = module_file.relative_to(self.stdlib_path)
 
         # 3. venv
         elif module_file.is_relative_to(self.site_packages):
-            logger.debug(f"{(module.__name__, ty.__qualname__)} is a venv dependency")
+            logger.info(f"{(module.__name__, ty.__qualname__)} is a venv dependency")
             rel_path = module_file.relative_to(self.site_packages)
 
         else:

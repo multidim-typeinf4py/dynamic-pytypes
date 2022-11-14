@@ -1,5 +1,4 @@
 import difflib
-import io
 import pathlib
 import pytest
 
@@ -8,6 +7,7 @@ import libcst.codemod as codemod
 
 from tracing.batch import TraceBatch
 from typegen.strategy.inline import BruteInlineGenerator
+from typegen.strategy.hinter import LibCSTTypeHintApplier
 
 
 @pytest.fixture
@@ -22,7 +22,9 @@ def generator(scope="function") -> BruteInlineGenerator:
 
     batch = batch.returns(names2types={"f": ("mycool", "Ty")})
 
-    return BruteInlineGenerator(context=codemod.CodemodContext(), traced=batch.to_frame())
+    return BruteInlineGenerator(
+        context=codemod.CodemodContext(), provider=LibCSTTypeHintApplier, traced=batch.to_frame()
+    )
 
 
 @pytest.fixture

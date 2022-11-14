@@ -1,6 +1,5 @@
 import functools
 import operator
-import os
 import libcst as cst
 
 from libcst import codemod
@@ -21,17 +20,15 @@ class AddImportTransformer(cst.CSTTransformer):
     def leave_Module(self, _: cst.Module, tree: cst.Module) -> cst.Module:
         from libcst.codemod.visitors._add_imports import AddHintableImportsVisitor
 
-        def file2module(file: str) -> str:
-            return os.path.splitext(file.replace(os.path.sep, "."))[0]
-
-        # Stupid implementation: make from x import y everywhere
-        self.traced["modules"] = self.traced[Column.FILENAME].map(lambda f: file2module(f))
-
         # ignore builtins
         non_builtin = self.traced[Column.VARTYPE_MODULE].notnull()
-        # ignore classes in the same module
-        not_in_same_mod = self.traced["modules"] != self.traced[Column.VARTYPE_MODULE]
-        retain_mask = [non_builtin, not_in_same_mod]
+
+        if self.context.full_module_name is not None:
+            # ignore classes in the same module
+            not_in_same_mod = self.traced[Column.VARTYPE_MODULE] != self.context.full_module_name
+            retain_mask = [non_builtin, not_in_same_mod]
+        else:
+            retain_mask = [non_builtin]
 
         important = self.traced[functools.reduce(operator.and_, retain_mask)]
         if important.empty:
