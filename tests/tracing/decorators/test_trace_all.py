@@ -35,14 +35,14 @@ def test_everything_is_traced(monkeypatch):
         ),
     )
 
-    ftrace, fperf = decorators.trace(trace_function)()
+    ftrace, fperf = decorators.dev_trace(trace_function)()
     assert fperf is None
     assert ftrace is not None, f"Trace data of {ftrace.__name__} should not be None"
     assert (
         "trace_function" in ftrace[Column.FUNCNAME].values
     ), f"Trace data for 'trace_function' is missing from {ftrace.__name__}"
 
-    mtrace, mperf = decorators.trace(Class().trace_method)()
+    mtrace, mperf = decorators.dev_trace(Class().trace_method)()
     assert mperf is None
     assert mtrace is not None, f"Trace data of {mtrace.__name__} should not be None"
     assert (
@@ -68,7 +68,7 @@ def test_everything_is_traced_with_benchmark_performance(monkeypatch):
         ),
     )
 
-    ftrace, fperf = decorators.trace(trace_function)()
+    ftrace, fperf = decorators.dev_trace(trace_function)()
     assert ftrace is not None, f"Trace data of {ftrace.__name__} should not be None"
     assert (
         "trace_function" in ftrace[Column.FUNCNAME].values
@@ -79,7 +79,7 @@ def test_everything_is_traced_with_benchmark_performance(monkeypatch):
     ), f"When benchmarking, perf data 'fperf': should not be None"
     assert fperf.shape == (4,), f"Wrong benchmark shape for 'fperf': Got {fperf.shape}"
 
-    mtrace, mperf = decorators.trace(Class().trace_method)()
+    mtrace, mperf = decorators.dev_trace(Class().trace_method)()
     assert mtrace is not None, f"Trace data of {mtrace.__name__} should not be None"
     assert (
         "trace_method" in mtrace[Column.FUNCNAME].values

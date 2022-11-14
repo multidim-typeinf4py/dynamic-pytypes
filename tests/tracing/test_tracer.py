@@ -8,6 +8,7 @@ import pandas as pd
 
 from tracing.tracer import Tracer
 from typegen.strategy.inline import BruteInlineGenerator
+from typegen.strategy import hinter
 
 from tests.helpers.paths import PROJ_PATH, STDLIB_PATH, VENV_PATH
 from tests.helpers.checkers import FullyTypedAST
@@ -36,8 +37,11 @@ def test_trace() -> None:
 
     print(tracer.trace_data)
 
-    metadata.MetadataWrapper(module).visit(BruteInlineGenerator(
-        context=codemod.CodemodContext(filename=str(traceable), full_module_name=)
-    ))
-
-    assert False
+    generator = BruteInlineGenerator(
+        context=codemod.CodemodContext(
+            filename=str(traceable), full_module_name="tests.tracing.traceable"
+        ),
+        provider=hinter.LibCSTTypeHintApplier,
+        traced=tracer.trace_data,
+    )
+    typed = generator.transform_module(module)
