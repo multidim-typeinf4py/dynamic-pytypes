@@ -1,8 +1,10 @@
-import logging
 import click
+import logging
 import pathlib
-from typegen.trace_data_file_collector import TraceDataFileCollector, DataFileCollector
+import sys
 
+import libcst.codemod._cli as cli
+import libcst.codemod as codemod
 
 from constants import CONFIG_FILE_NAME
 
@@ -18,10 +20,14 @@ from .unification.union import UnionFilter
 from .unification.drop_min_threshold import MinThresholdFilter
 from .unification.keep_only_first import KeepOnlyFirstFilter
 
-from .strats.stub import StubFileGenerator
-from .strats.inline import InlineGenerator
-from .strats.eval_inline import EvaluationInlineGenerator
-from .strats.gen import TypeHintGenerator
+from .strategy import AnnotationGenStratApplier
+
+from .strategy.stub import StubFileGenerator
+from .strategy.inline import BruteInlineGenerator, RetentiveInlineGenerator
+
+from .strategy.hinter import LibCSTTypeHintApplier, PyTypesTypeHintApplier
+
+from typegen.trace_data_file_collector import TraceDataFileCollector, DataFileCollector
 
 __all__ = [
     DataFileCollector.__name__,
@@ -58,13 +64,35 @@ __all__ = [
     required=False,
 )
 @click.option(
-    "-g",
-    "--gen-strat",
+    "-s",
+    "--strat",
     help="Select a strategy for generating type hints",
     type=click.Choice(
-        [StubFileGenerator.ident, InlineGenerator.ident, EvaluationInlineGenerator.ident], case_sensitive=False
+        [
+            StubFileGenerator.ident,
+            RetentiveInlineGenerator.ident,
+            BruteInlineGenerator.ident,
+        ],
+        case_sensitive=False,
     ),
+    callback=lambda ctx, _, val: {
+        StubFileGenerator.ident: StubFileGenerator,
+        RetentiveInlineGenerator.ident: RetentiveInlineGenerator,
+        BruteInlineGenerator.ident: BruteInlineGenerator,
+    }[val],
     required=True,
+)
+@click.option(
+    "-i",
+    "--impl",
+    help="Select an implementation for interpreting the traced data during hinting",
+    type=click.Choice(
+        [LibCSTTypeHintApplier.ident, PyTypesTypeHintApplier.ident], case_sensitive=False
+    ),
+    callback=lambda ctx, _, val: {
+        LibCSTTypeHintApplier.ident: LibCSTTypeHintApplier,
+        PyTypesTypeHintApplier.ident: PyTypesTypeHintApplier,
+    }[val],
 )
 @click.option(
     "-v",
@@ -76,15 +104,16 @@ __all__ = [
     default=False,
 )
 def main(**params):
-    projpath, verb, strat_name, unifiers = (
+    projpath, verb, gen_strat, genimpl, unifiers = (
         params["path"],
         params["verbose"],
         params["gen_strat"],
+        params["impl"],
         params["unifiers"],
     )
 
     logging.basicConfig(level=verb)
-    logging.debug(f"{projpath=}, {verb=}, {strat_name=} {unifiers=}")
+    logging.debug(f"{projpath=}, {verb=}, {unifiers=}")
 
     # Load config
     pytypes_cfg = ptconfig.load_config(projpath / CONFIG_FILE_NAME)
@@ -123,5 +152,24 @@ def main(**params):
 
     print(f"Shape of filtered trace data: {filtered.shape}")
 
-    typegen = TypeHintGenerator(ident=strat_name, types=filtered)
-    typegen.apply(pytypes_cfg.pytypes.proj_path)
+    result = codemod.parallel_exec_transform_with_prettyprint(
+        transform=AnnotationGenStratApplier(
+            context=codemod.CodemodContext(),
+            generator_strategy=gen_strat,
+            annotation_provider=genimpl,
+            traced=td_df,
+        ),
+        files=cli.gather_files(pytypes_cfg.pytypes.proj_path),
+        jobs=1,
+        blacklist_patterns=["__init__.py"],
+        repo_root=str(pytypes_cfg.pytypes.proj_path),
+    )
+
+    print(
+        f"Finished codemodding {result.successes + result.skips + result.failures} files!",
+        file=sys.stderr,
+    )
+    print(f" - Transformed {result.successes} files successfully.", file=sys.stderr)
+    print(f" - Skipped {result.skips} files.", file=sys.stderr)
+    print(f" - Failed to codemod {result.failures} files.", file=sys.stderr)
+    print(f" - {result.warnings} warnings were generated.", file=sys.stderr)
