@@ -4,8 +4,6 @@ import libcst.codemod as codemod
 
 import pandas as pd
 
-from constants import Column
-
 
 class AnnotationProvider(codemod.ContextAwareTransformer):
     def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
