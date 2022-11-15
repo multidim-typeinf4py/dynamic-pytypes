@@ -36,7 +36,7 @@ def getssh():
     return pathlib.Path.home() / ".ssh"
 
 
-@decorators.dev_trace
+@decorators.trace
 def test_monkeypatched_getssh(monkeypatch, cfg) -> None:
     # Application of the monkeypatch to replace Path.home
     # with the behavior to replace Path.home
@@ -55,7 +55,7 @@ def test_monkeypatched_getssh(monkeypatch, cfg) -> None:
 
 
 @pytest.mark.parametrize("test_input,expected", [("3+5", 8), ("2+4", 6), ("6*9", 54)])
-@decorators.dev_trace
+@decorators.trace
 def test_eval(test_input, expected, cfg):
     assert eval(test_input) == expected
 
@@ -64,14 +64,14 @@ def test_eval(test_input, expected, cfg):
     "test_input,expected",
     [("3+5", 8), ("2+4", 6), pytest.param("6*9", 42, marks=pytest.mark.xfail)],
 )
-@decorators.dev_trace
+@decorators.trace
 def test_eval(test_input, expected, cfg):
     assert eval(test_input) == expected
 
 
 @pytest.mark.parametrize("x", [0, 1])
 @pytest.mark.parametrize("y", [2, 3])
-@decorators.dev_trace
+@decorators.trace
 def test_foo(x, y, cfg):
     assert x in (0, 1) and y in (2, 3)
 
@@ -100,6 +100,6 @@ def app(smtp_connection):
     return App(smtp_connection)
 
 
-@decorators.dev_trace
+@decorators.trace
 def test_smtp_connection_exists(app, cfg):
     assert app.smtp_connection
