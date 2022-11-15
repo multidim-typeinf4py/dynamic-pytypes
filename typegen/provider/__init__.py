@@ -17,5 +17,5 @@ class AnnotationProvider(codemod.ContextAwareTransformer):
 
         self.logger = logging.getLogger(self.__class__.__qualname__)
 
-    def _create_annotation(vartype: str) -> cst.Annotation:
+    def _create_annotation(self, vartype: str) -> cst.Annotation:
         return cst.Annotation(annotation=cst.parse_expression(vartype))
