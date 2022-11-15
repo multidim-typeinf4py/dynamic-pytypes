@@ -1,6 +1,5 @@
 import logging
 import pathlib
-import sys
 
 import libcst.codemod as codemod
 
@@ -29,6 +28,8 @@ def test_main():
         clazz.method(2, 3, 4)
         clazz.multiline_method("Hello", 7, "World")
         clazz.function(a=driver.A(), b=driver.B(), c=driver.C())
+
+        driver.outer_function()
 
     assert tracer.trace_data is not None
     assert not tracer.trace_data.empty

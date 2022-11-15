@@ -37,6 +37,12 @@ class Clazz:
         v: str = f"{a}{b}{c}"
         return v
 
+def outer_function() -> int:
+    def nested_function(a: int) -> str:
+        return str(a)
+
+    return int(nested_function(10))
+
 
 a: int = 5
 e: int
