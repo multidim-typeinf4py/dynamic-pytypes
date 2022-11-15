@@ -57,7 +57,7 @@ class AnnotationGenStratApplier(codemod.Codemod):
         self.traced = traced
 
     def transform_module_impl(self, tree: cst.Module) -> cst.Module:
-        if self.context.filename:
+        if self.context.filename and self.context.metadata_manager:
             relative = pathlib.Path(self.context.filename).relative_to(
                 self.context.metadata_manager.root_path
             )
