@@ -93,6 +93,7 @@ __all__ = [
         LibCSTTypeHintApplier.ident: LibCSTTypeHintApplier,
         PyTypesTypeHintApplier.ident: PyTypesTypeHintApplier,
     }[val],
+    default=LibCSTTypeHintApplier.ident,
 )
 @click.option(
     "-v",
