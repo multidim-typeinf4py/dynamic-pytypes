@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import typing
 
 import libcst.codemod as codemod
 
@@ -12,11 +13,20 @@ from tests.helpers import paths
 
 from . import driver
 
+import pytest
 
-def test_main():
+@pytest.fixture
+def driver_path() -> typing.Iterator[pathlib.Path]:
+    path = pathlib.Path("tests", "integration", "driver.py")
+    backup = path.open().read()
+
+    yield path
+    path.open("w").write(backup)
+
+
+def test_main(driver_path: pathlib.Path):
     logger = logging.getLogger("integration")
 
-    driver_path = pathlib.Path("tests", "integration", "driver.py")
     tracer = Tracer(
         proj_path=paths.PROJ_PATH, stdlib_path=paths.STDLIB_PATH, venv_path=paths.VENV_PATH
     )
