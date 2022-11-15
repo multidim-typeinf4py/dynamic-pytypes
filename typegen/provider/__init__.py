@@ -10,10 +10,7 @@ from constants import Column
 class AnnotationProvider(codemod.ContextAwareTransformer):
     def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
         super().__init__(context=context)
-        if self.context.filename:
-            self.traced = traced[traced[Column.FILENAME] == self.context.filename]
-        else:
-            self.traced = traced
+        self.traced = traced
 
         self.logger = logging.getLogger(self.__class__.__qualname__)
 
