@@ -13,6 +13,8 @@ from typegen.strategy import hinter
 from tests.helpers.paths import PROJ_PATH, STDLIB_PATH, VENV_PATH
 from tests.helpers.checkers import FullyTypedAST
 
+import pytest
+
 
 def _compare_dataframes(expected: pd.DataFrame, actual: pd.DataFrame):
     if not (diff := expected.compare(actual)).empty:
@@ -23,6 +25,7 @@ def _compare_dataframes(expected: pd.DataFrame, actual: pd.DataFrame):
             assert False
 
 
+@pytest.mark.skip(reason="Not finished")
 def test_trace() -> None:
     traceable = pathlib.Path("tests", "tracing", "traceable.py")
     module = cst.parse_module(source=traceable.open().read())
