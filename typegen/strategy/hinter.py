@@ -3,6 +3,7 @@ import functools
 import itertools
 import logging
 import operator
+import pathlib
 import typing
 
 import libcst as cst
@@ -30,22 +31,44 @@ def _create_annotation(vartype: str) -> cst.Annotation:
 class AnnotationProvider(codemod.ContextAwareTransformer):
     def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
         super().__init__(context=context)
-        if self.context.filename:
-            self.traced = traced[traced[Column.FILENAME] == self.context.filename]
-        else:
-            self.traced = traced
+        self.logger = logging.getLogger(self.__class__.__qualname__)
+        self.logger.info(f"Files: {traced[Column.FILENAME].unique()}")
+        self.traced = traced
 
 
 class LibCSTTypeHintApplier(AnnotationProvider):
     ident = "libcst"
 
+    def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
+        super().__init__(context, traced)
+
     def leave_Module(self, _: cst.Module, updated_node: cst.Module) -> cst.Module:
+        self.logger.info(f"Hinting {self.context.filename}")
+
+        functions = self.functions()
+        self.logger.debug(f"Functions: {list(key.name for key in functions.keys())}")
+
+        methods = self.methods()
+        self.logger.debug(f"Methods: {list(key.name for key in methods.keys())}")
+
+        glbls = self.globals()
+        self.logger.debug(f"Globals: {list(key for key in glbls.keys())}")
+
+        lcls = self.locals()
+        self.logger.debug(f"Locals: {list(key for key in lcls.keys())}")
+
+        members = self.members()
+        self.logger.debug(f"Members for: {list(key for key in members.keys())}")
+
+        assert all(fn := fname not in methods for fname in functions), f"Key clash between functions and methods: {fn}"
+        assert all(v := vname not in glbls for vname in lcls), f"Key clash between locals and globals: {v}"
+
         visitor = ApplyTypeAnnotationsVisitor(
             context=self.context,
             annotations=Annotations(
-                functions=self.functions() | self.methods(),
-                attributes=self.globals() | self.locals(),
-                class_definitions=self.members(),
+                functions=functions | methods,
+                attributes=glbls | lcls,
+                class_definitions=members,
                 typevars=dict(),
                 names=set(),
             ),
@@ -77,6 +100,8 @@ class LibCSTTypeHintApplier(AnnotationProvider):
             ]
 
             returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
+            if not len(returns_df):
+                continue
             assert len(returns_df) == 1, f"Found multiple hints for function `{name}`: {returns_df}"
             returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
@@ -94,8 +119,8 @@ class LibCSTTypeHintApplier(AnnotationProvider):
 
         d: dict[FunctionKey, FunctionAnnotation] = dict()
 
-        for (fname, _, cname), group in df.groupby(
-            [Column.FUNCNAME, Column.CLASS_MODULE, Column.CLASS],
+        for fname, group in df.groupby(
+            by=Column.FUNCNAME,
             sort=False,
             dropna=False,
         ):
@@ -108,22 +133,19 @@ class LibCSTTypeHintApplier(AnnotationProvider):
                 for v, t in param_df[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False)
             ]
 
-            if "self" not in param_df[Column.VARNAME]:
-                params.insert(0, cst.Param(name=cst.Name(value="self")))
-
             returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
-            if not returns_df.empty:
-                name = f"{cname}.{fname}"
+            if returns_df.empty:
+                continue
 
-                assert (
-                    len(returns_df) == 1
-                ), f"Found multiple hints for method `{name}`: {returns_df}"
-                returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
+            assert (
+                len(returns_df) == 1
+            ), f"Found multiple hints for method `{fname}`: {returns_df}"
+            returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
-                key = FunctionKey.make(name=name, params=cst.Parameters(params))
-                value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
-
-                d[key] = value
+            key = FunctionKey.make(name=fname, params=cst.Parameters(params))
+            value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
+            d[key] = value
+            
         return d
 
     def globals(self) -> dict[str, cst.Annotation]:
@@ -141,10 +163,8 @@ class LibCSTTypeHintApplier(AnnotationProvider):
         d: dict[str, cst.Annotation] = dict()
 
         for fname, group in df.groupby(by=Column.FUNCNAME, sort=False, dropna=False):
-            for cname, vname, vtype in group[
-                [Column.CLASS, Column.VARNAME, Column.VARTYPE]
-            ].itertuples(index=False):
-                name = f"{fname}.{vname}" if pd.isnull(cname) else f"{cname}.{fname}.{vname}"
+            for vname, vtype in group[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False):
+                name = f"{fname}.{vname}"
                 d[name] = _create_annotation(vtype)
 
         return d
