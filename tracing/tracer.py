@@ -209,6 +209,8 @@ class Tracer(TracerBase):
 
     def _on_return(self, frame, arg: typing.Any, batch: TraceBatch) -> TraceBatch:
         code = frame.f_code
+
+        # This is fine, we only want to "normal" name
         function_name = code.co_name
 
         modname = self._resolver.get_module_and_name(type(arg))
@@ -378,6 +380,9 @@ class Tracer(TracerBase):
 
 def _get_class_in_frame(frame) -> type | None:
     code = frame.f_code
+
+    # This is intentionally not the qualname, as we are checking
+    # for attributes on the class instance
     function_name = code.co_name
     all_possible_classes = filter(inspect.isclass, frame.f_globals.values())
     for possible_class in all_possible_classes:
@@ -392,7 +397,5 @@ def _get_class_in_frame(frame) -> type | None:
     return None
 
 
-def _sanitize_fqualname(qname: str | None) -> str | None:
-    if qname is None:
-        return None
+def _sanitize_fqualname(qname: str) -> str:
     return qname.replace(".<locals>.", ".")
