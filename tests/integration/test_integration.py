@@ -5,10 +5,10 @@ import sys
 import libcst.codemod as codemod
 
 from tracing import Tracer
+from typegen.provider.cstimpl import LibCSTTypeHintApplier
 
 from typegen.strategy import AnnotationGenStratApplier
 from typegen.strategy.inline import BruteInlineGenerator
-from typegen.strategy.hinter import LibCSTTypeHintApplier
 from tests.helpers import paths
 
 from . import driver

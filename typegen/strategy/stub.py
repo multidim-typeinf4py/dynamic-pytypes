@@ -8,7 +8,6 @@ import libcst as cst
 
 from . import AnnotationGeneratorStrategy
 from .imports import AddImportTransformer
-from .hinter import LibCSTTypeHintApplier
 
 
 class ImportUnionTransformer(cst.CSTTransformer):

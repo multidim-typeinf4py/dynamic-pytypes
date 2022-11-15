@@ -8,6 +8,10 @@ from common import TraceDataCategory
 from tracing.tracer import Tracer
 from constants import Schema
 
+import pytest
+
+pytest.skip(reason="Ignore optimisation is dubious", allow_module_level=True)
+
 # NOTE: Ignored has been made defunct;
 # NOTE: the tracer will ignore the pathlib calls by itself
 

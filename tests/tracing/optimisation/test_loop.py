@@ -9,6 +9,9 @@ from common import TraceDataCategory
 from tracing.tracer import Tracer
 from constants import Schema
 
+import pytest
+
+pytest.skip(reason="Looping optimisation is dubious", allow_module_level=True)
 
 def skippable_looping():
     s = 0

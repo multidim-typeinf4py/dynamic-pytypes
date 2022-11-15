@@ -8,8 +8,7 @@ import libcst.codemod as codemod
 import pandas as pd
 
 from constants import Column
-
-from .hinter import AnnotationProvider
+from typegen.provider import AnnotationProvider
 
 
 class AnnotationGeneratorStrategy(codemod.Codemod):
