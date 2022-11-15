@@ -200,7 +200,7 @@ class Tracer(TracerBase):
         names2types = dict()
 
         for name, value in frame.f_locals.items():
-            modname = self._resolver.get_module_and_name(type(value))  # mypy: ignore-errors
+            modname = self._resolver.get_module_and_name(type(value))
             if modname is None:
                 self._on_non_importable(type(value))
             names2types[name] = modname
@@ -211,7 +211,7 @@ class Tracer(TracerBase):
         code = frame.f_code
         function_name = code.co_name
 
-        modname = self._resolver.get_module_and_name(type(arg))  # mypy: ignore-errors
+        modname = self._resolver.get_module_and_name(type(arg))
         if modname is None:
             self._on_non_importable(type(arg))
         names2types = {function_name: modname}
@@ -246,7 +246,7 @@ class Tracer(TracerBase):
 
         object_dict = class_object.__dict__
         for name, value in object_dict.items():
-            modname = self._resolver.get_module_and_name(type(value))  # mypy: ignore-errors
+            modname = self._resolver.get_module_and_name(type(value))
             if modname is None:
                 self._on_non_importable(type(value))
             names2types[name] = modname
@@ -363,7 +363,7 @@ class Tracer(TracerBase):
         for name, value in new_vars2vals.items():
             if name not in prev_vars2vals or value != prev_vars2vals[name]:
                 valt = type(value)
-                modname = self._resolver.get_module_and_name(valt) # mypy: ignore-errors
+                modname = self._resolver.get_module_and_name(valt)
                 if modname is None:
                     self._on_non_importable(valt)
                 names2types[name] = modname
@@ -392,5 +392,7 @@ def _get_class_in_frame(frame) -> type | None:
     return None
 
 
-def _sanitize_fqualname(qname: str) -> str:
+def _sanitize_fqualname(qname: str | None) -> str | None:
+    if qname is None:
+        return None
     return qname.replace(".<locals>.", ".")
