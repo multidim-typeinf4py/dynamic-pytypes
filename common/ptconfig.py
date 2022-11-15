@@ -12,6 +12,7 @@ import constants
 @dataclass
 class PyTypes:
     """Object representation of the [pytypes] section"""
+
     project: str
 
     stdlib_path: pathlib.Path
@@ -20,13 +21,11 @@ class PyTypes:
     benchmark_performance: bool = False
 
     output_template: str = field(
-        default="pytypes/{project}/{test_case}/{func_name}"
-        + constants.TRACE_DATA_FILE_ENDING,
+        default="pytypes/{project}/{test_case}/{func_name}" + constants.TRACE_DATA_FILE_ENDING,
         repr=False,
     )
     output_npy_template: str = field(
-        default="pytypes/{project}/{test_case}/{func_name}"
-        + constants.NP_ARRAY_FILE_ENDING,
+        default="pytypes/{project}/{test_case}/{func_name}" + constants.NP_ARRAY_FILE_ENDING,
         repr=False,
     )
 
@@ -79,15 +78,13 @@ class MinThreshold:
 
 # https://github.com/konradhalas/dacite/pull/184
 # the cooler union syntax is not supported
-Unifier = typing.Union[
-    Dedup, DropTest, DropVars, UnifySubtypes, Unify, KeepFirst, MinThreshold
-]
+Unifier = typing.Union[Dedup, DropTest, DropVars, UnifySubtypes, Unify, KeepFirst, MinThreshold]
 
 
 @dataclass
 class TomlCfg:
-    """Object representation of the config file
-    """
+    """Object representation of the config file"""
+
     pytypes: PyTypes
     unifier: list[Unifier] = field(default_factory=list)
 

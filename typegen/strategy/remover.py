@@ -20,9 +20,7 @@ class AssignHintRemover(cst.CSTTransformer):
         if updated_node.value is None:
             return cst.RemoveFromParent()
 
-        return cst.Assign(
-            targets=[cst.AssignTarget(updated_node.target)], value=updated_node.value
-        )
+        return cst.Assign(targets=[cst.AssignTarget(updated_node.target)], value=updated_node.value)
 
 
 class HintRemover(AssignHintRemover, ParameterHintRemover, ReturnHintRemover):

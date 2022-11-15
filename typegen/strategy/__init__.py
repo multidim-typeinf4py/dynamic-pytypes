@@ -1,5 +1,6 @@
 import abc
 import functools
+import pathlib
 import typing
 
 import libcst as cst
@@ -7,8 +8,7 @@ import libcst.codemod as codemod
 import pandas as pd
 
 from constants import Column
-
-from .hinter import AnnotationProvider
+from typegen.provider import AnnotationProvider
 
 
 class AnnotationGeneratorStrategy(codemod.Codemod):
@@ -16,7 +16,10 @@ class AnnotationGeneratorStrategy(codemod.Codemod):
     including where the result is to be stored"""
 
     def __init__(
-        self, context: codemod.CodemodContext, provider: typing.Type[AnnotationProvider], traced: pd.DataFrame
+        self,
+        context: codemod.CodemodContext,
+        provider: typing.Type[AnnotationProvider],
+        traced: pd.DataFrame,
     ) -> None:
         super().__init__(context=context)
         self.traced = traced
@@ -49,18 +52,21 @@ class AnnotationGenStratApplier(codemod.Codemod):
     ) -> None:
         super().__init__(context=context)
         self.generator_kind = generator_strategy
-        self.impl_kind = annotation_provider
+        self.provider = annotation_provider
         self.traced = traced
 
     def transform_module_impl(self, tree: cst.Module) -> cst.Module:
-        if self.context.filename is not None:
-            relevant = self.traced[self.traced[Column.FILENAME] == str(self.context.filename)]
+        if self.context.filename and self.context.metadata_manager:
+            relative = pathlib.Path(self.context.filename).relative_to(
+                self.context.metadata_manager.root_path
+            )
+            relevant = self.traced[self.traced[Column.FILENAME] == str(relative)]
         else:
             relevant = self.traced
 
-        impl = self.impl_kind(context=self.context, traced=relevant)
         generator = self.generator_kind(
             context=self.context,
+            provider=self.provider,
             traced=relevant,
         )
 

@@ -6,8 +6,8 @@ import libcst as cst
 import libcst.codemod as codemod
 
 from tracing.batch import TraceBatch
+from typegen.provider.cstimpl import LibCSTTypeHintApplier
 from typegen.strategy.inline import BruteInlineGenerator
-from typegen.strategy.hinter import LibCSTTypeHintApplier
 
 
 @pytest.fixture

@@ -21,41 +21,27 @@ def test_all_types_are_unified(sample_trace_data):
     expected_trace_data = sample_trace_data.copy().reset_index(drop=True)
 
     # argument1
-    expected_trace_data.loc[0:3, Column.VARTYPE_MODULE] = ",".join(
-        [resource_module] * 3
-    )
+    expected_trace_data.loc[0:3, Column.VARTYPE_MODULE] = ",".join([resource_module] * 3)
     expected_trace_data.loc[0:3, Column.VARTYPE] = " | ".join(
         ["SubClass2", "SubClass2", "SubClass3"]
     )
 
     # local_variable1
-    expected_trace_data.loc[3:5, Column.VARTYPE_MODULE] = ",".join(
-        [resource_module] * 2
-    )
-    expected_trace_data.loc[3:5, Column.VARTYPE] = " | ".join(
-        ["SubClass11", "SubClass1"]
-    )
+    expected_trace_data.loc[3:5, Column.VARTYPE_MODULE] = ",".join([resource_module] * 2)
+    expected_trace_data.loc[3:5, Column.VARTYPE] = " | ".join(["SubClass11", "SubClass1"])
 
     # local_variable2
-    expected_trace_data.loc[5:7, Column.VARTYPE_MODULE] = ",".join(
-        [resource_module] * 2
-    )
-    expected_trace_data.loc[5:7, Column.VARTYPE] = " | ".join(
-        ["SubClass1", "SubClass1"]
-    )
+    expected_trace_data.loc[5:7, Column.VARTYPE_MODULE] = ",".join([resource_module] * 2)
+    expected_trace_data.loc[5:7, Column.VARTYPE] = " | ".join(["SubClass1", "SubClass1"])
 
     # class_member1
-    expected_trace_data.loc[7:10, Column.VARTYPE_MODULE] = ",".join(
-        [resource_module] * 3
-    )
+    expected_trace_data.loc[7:10, Column.VARTYPE_MODULE] = ",".join([resource_module] * 3)
     expected_trace_data.loc[7:10, Column.VARTYPE] = " | ".join(
         ["SubClass1", "SubClass1", "SubClass11"]
     )
 
     # local_variable
-    expected_trace_data.loc[10:15, Column.VARTYPE_MODULE] = ",".join(
-        [resource_module] * 5
-    )
+    expected_trace_data.loc[10:15, Column.VARTYPE_MODULE] = ",".join([resource_module] * 5)
     expected_trace_data.loc[10:15, Column.VARTYPE] = " | ".join(
         ["SubClass1", "SubClass1", "SubClass1", "SubClass1", "SubClass2"]
     )
@@ -84,7 +70,7 @@ def test_all_types_are_unified(sample_trace_data):
     logging.debug(f"diff: \n{exp_types_and_module.compare(act_types_and_module)}")
 
     # Side effect of unioning: the order is changed
-    #expected_trace_data = expected_trace_data.sort
+    # expected_trace_data = expected_trace_data.sort
 
     logging.debug(f"{expected_trace_data.columns} vs {actual_trace_data.columns}")
 
@@ -108,7 +94,8 @@ def test_all_builtins_get_empty_strings():
         TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         None,
-        f"{int.__name__}",]
+        f"{int.__name__}",
+    ]
     traced.loc[len(traced.index)] = [
         "",
         None,
@@ -118,7 +105,8 @@ def test_all_builtins_get_empty_strings():
         TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         None,
-        f"{str.__name__}",]
+        f"{str.__name__}",
+    ]
     traced.loc[len(traced.index)] = [
         "",
         None,
@@ -128,7 +116,8 @@ def test_all_builtins_get_empty_strings():
         TraceDataCategory.CALLABLE_PARAMETER,
         "a",
         "pathlib",
-        f"{pathlib.Path.__name__}",]
+        f"{pathlib.Path.__name__}",
+    ]
 
     expected_trace_data = pd.DataFrame(columns=Schema.TraceData.keys())
     expected_trace_data.loc[len(expected_trace_data)] = [
@@ -164,7 +153,7 @@ def test_all_builtins_get_empty_strings():
     logging.debug(f"diff: \n{exp_types_and_module.compare(act_types_and_module)}")
 
     # Side effect of unioning: the order is changed
-    #expected_trace_data = expected_trace_data.sort
+    # expected_trace_data = expected_trace_data.sort
 
     logging.debug(f"{expected_trace_data.columns} vs {actual_trace_data.columns}")
 

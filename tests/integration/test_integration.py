@@ -1,0 +1,65 @@
+import logging
+import pathlib
+import typing
+
+import libcst.codemod as codemod
+
+from tracing import Tracer
+from typegen.provider.cstimpl import LibCSTTypeHintApplier
+
+from typegen.strategy import AnnotationGenStratApplier
+from typegen.strategy.inline import BruteInlineGenerator
+from tests.helpers import paths
+
+from . import driver
+
+import pytest
+
+@pytest.fixture
+def driver_path() -> typing.Iterator[pathlib.Path]:
+    path = pathlib.Path("tests", "integration", "driver.py")
+    backup = path.open().read()
+
+    yield path
+    path.open("w").write(backup)
+
+
+def test_main(driver_path: pathlib.Path):
+    logger = logging.getLogger("integration")
+
+    tracer = Tracer(
+        proj_path=paths.PROJ_PATH, stdlib_path=paths.STDLIB_PATH, venv_path=paths.VENV_PATH
+    )
+    with tracer.active_trace():
+        driver.function(1, "2", 23)
+        driver.function_with_multiline_parameters("4", 5, "6")
+
+        clazz = driver.Clazz(1)
+        clazz.method(2, 3, 4)
+        clazz.multiline_method("Hello", 7, "World")
+        clazz.function(a=driver.A(), b=driver.B(), c=driver.C())
+
+        driver.outer_function()
+
+    assert tracer.trace_data is not None
+    assert not tracer.trace_data.empty
+
+    result = codemod.parallel_exec_transform_with_prettyprint(
+        transform=AnnotationGenStratApplier(
+            context=codemod.CodemodContext(),
+            generator_strategy=BruteInlineGenerator,
+            annotation_provider=LibCSTTypeHintApplier,
+            traced=tracer.trace_data,
+        ),
+        files=[str(driver_path)],
+        unified_diff=1,
+        jobs=1,
+        blacklist_patterns=["__init__.py"],
+        repo_root=str(paths.PROJ_PATH),
+    )
+
+    logger.info(f"Finished codemodding {result.successes + result.skips + result.failures} files!")
+    logger.info(f" - Transformed {result.successes} files successfully.")
+    logger.info(f" - Skipped {result.skips} files.")
+    logger.info(f" - Failed to codemod {result.failures} files.")
+    logger.info(f" - {result.warnings} warnings were generated.")

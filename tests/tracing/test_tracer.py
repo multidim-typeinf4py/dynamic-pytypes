@@ -7,11 +7,13 @@ import libcst.codemod as codemod
 import pandas as pd
 
 from tracing.tracer import Tracer
+from typegen.provider.cstimpl import LibCSTTypeHintApplier
 from typegen.strategy.inline import BruteInlineGenerator
-from typegen.strategy import hinter
 
 from tests.helpers.paths import PROJ_PATH, STDLIB_PATH, VENV_PATH
 from tests.helpers.checkers import FullyTypedAST
+
+import pytest
 
 
 def _compare_dataframes(expected: pd.DataFrame, actual: pd.DataFrame):
@@ -23,6 +25,7 @@ def _compare_dataframes(expected: pd.DataFrame, actual: pd.DataFrame):
             assert False
 
 
+@pytest.mark.skip(reason="Not finished")
 def test_trace() -> None:
     traceable = pathlib.Path("tests", "tracing", "traceable.py")
     module = cst.parse_module(source=traceable.open().read())
@@ -41,7 +44,7 @@ def test_trace() -> None:
         context=codemod.CodemodContext(
             filename=str(traceable), full_module_name="tests.tracing.traceable"
         ),
-        provider=hinter.LibCSTTypeHintApplier,
+        provider=LibCSTTypeHintApplier,
         traced=tracer.trace_data,
     )
     typed = generator.transform_module(module)

@@ -5,10 +5,12 @@ class C:
     def m(self, i) -> int:
         return self.a + i
 
+
 def f(i: int) -> str:
     c: C = C()
     c.a = 10
     return f"{c.m(i)}"
+
 
 def another_one():
     a: int

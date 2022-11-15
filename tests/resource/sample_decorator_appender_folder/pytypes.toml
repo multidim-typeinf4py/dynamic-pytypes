@@ -2,7 +2,7 @@ unifier = []
 
 [pytypes]
 project = "sample_decorator_appender_folder"
-stdlib_path = "/usr/lib/python3.10"
+stdlib_path = "/usr/lib/python3.11"
 proj_path = "/home/benji/Documents/Uni/heidelberg/05/masterarbeit/impls/dynamic-pytypes/tests/resource/sample_decorator_appender_folder"
-venv_path = "/home/benji/.cache/pypoetry/virtualenvs/pytypes-qxRBzedB-py3.10"
+venv_path = "/home/benji/.cache/pypoetry/virtualenvs/pytypes-qxRBzedB-py3.11"
 benchmark_performance = false

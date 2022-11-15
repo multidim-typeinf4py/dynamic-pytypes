@@ -10,7 +10,6 @@ import tqdm
 
 from .projio import Project
 import constants
-from common.ptconfig import write_config, TomlCfg, PyTypes
 
 from confgen import generate_cfg
 
@@ -124,9 +123,7 @@ class AppendDecoratorTransformer(cst.CSTTransformer):
     ):
         self.test_function_name_pattern: re.Pattern[str] = test_function_name_pattern
         self._sys_path_ext = sys_path_ext
-        self._state: AppendDecoratorTransformer.State = (
-            AppendDecoratorTransformer.State.INITIAL
-        )
+        self._state: AppendDecoratorTransformer.State = AppendDecoratorTransformer.State.INITIAL
 
     def leave_Module(self, _: cst.Module, updated_node: cst.Module) -> cst.Module:
         # If there are no imports, then the state may not change completely

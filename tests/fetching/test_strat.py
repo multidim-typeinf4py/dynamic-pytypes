@@ -39,9 +39,7 @@ class ValidPytestApplicationVisitor(cst.CSTVisitor):
     )
 
     # @decorators.trace
-    TRACE = m.Decorator(
-        decorator=m.Attribute(value=m.Name("decorators"), attr=m.Name("trace"))
-    )
+    TRACE = m.Decorator(decorator=m.Attribute(value=m.Name("decorators"), attr=m.Name("trace")))
 
     # from __future__ import ...
     _FUTURE_IMPORT_MATCH = m.ImportFrom(module=m.Name(value="__future__"))
@@ -70,8 +68,10 @@ class ValidPytestApplicationVisitor(cst.CSTVisitor):
         if m.matches(node, ValidPytestApplicationVisitor._FUTURE_IMPORT_MATCH):
             assert not self.import_found, f"Found __future__ import after imports!"
 
-            # No other ImportFroms may have appeared before this 
-            assert not self.standard_import_from_found, f"Found __future__ import after other import froms!"
+            # No other ImportFroms may have appeared before this
+            assert (
+                not self.standard_import_from_found
+            ), f"Found __future__ import after other import froms!"
             self._has_import_future = True
 
         else:
@@ -89,8 +89,7 @@ class ValidPytestApplicationVisitor(cst.CSTVisitor):
         if node.name.value.startswith("test_"):
             self.test_found = True
             self.all_tests_are_traced = self.all_tests_are_traced and any(
-                m.matches(d, ValidPytestApplicationVisitor.TRACE)
-                for d in node.decorators
+                m.matches(d, ValidPytestApplicationVisitor.TRACE) for d in node.decorators
             )
 
         logging.debug(f"{self.test_found=}  {self.all_tests_are_traced=}")

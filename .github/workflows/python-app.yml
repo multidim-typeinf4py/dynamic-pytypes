@@ -23,10 +23,10 @@ jobs:
         fetch-depth: 1
         submodules: 'true'
 
-    - name: Set up Python 3.10
+    - name: Set up Python 3.11
       uses: actions/setup-python@v3
       with:
-        python-version: "3.10"
+        python-version: "3.11"
   
     - name: Set up Poetry
       uses: snok/install-poetry@v1
@@ -62,12 +62,16 @@ jobs:
     - name: PyTest + coverage
       run: |
         poetry run python main.py confgen -p .
-        poetry run python -m pytest --ignore=tests/tracing --cov --cov-report xml:reports/coverage/coverage.xml
+        poetry run python -m pytest --ignore=tests/tracing --ignore=tests/integration --cov --cov-report xml:reports/coverage/coverage.xml
         poetry run python -m coverage report
 
     - name: PyTest + sys.settrace
       run: | 
         poetry run python -m pytest tests/tracing
+
+    - name: Integration tests
+      if: github.event.pull_request.merged
+      run: poetry run python -m pytest tests/integration
 
     - name: Upload artifacts
       uses: actions/upload-artifact@master

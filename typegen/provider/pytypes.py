@@ -1,3 +1,6 @@
+# mypy: ignore-errors
+
+
 from dataclasses import dataclass
 import functools
 import itertools
@@ -8,180 +11,26 @@ import typing
 import libcst as cst
 import libcst.codemod as codemod
 import libcst.metadata as metadata
-from libcst.codemod.visitors._apply_type_annotations import (
-    Annotations,
-    ApplyTypeAnnotationsVisitor,
-)
-from libcst.codemod.visitors._apply_type_annotations import (
-    FunctionAnnotation,
-    FunctionKey,
-)
 
 import pandas as pd
 
 from constants import Column
 from common.trace_data_category import TraceDataCategory
 
-
-def _create_annotation(vartype: str) -> cst.Annotation:
-    return cst.Annotation(annotation=cst.parse_expression(vartype))
-
-
-class AnnotationProvider(codemod.ContextAwareTransformer):
-    def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
-        super().__init__(context=context)
-        if self.context.filename:
-            self.traced = traced[traced[Column.FILENAME] == self.context.filename]
-        else:
-            self.traced = traced
-
-
-class LibCSTTypeHintApplier(AnnotationProvider):
-    ident = "libcst"
-
-    def leave_Module(self, _: cst.Module, updated_node: cst.Module) -> cst.Module:
-        visitor = ApplyTypeAnnotationsVisitor(
-            context=self.context,
-            annotations=Annotations(
-                functions=self.functions() | self.methods(),
-                attributes=self.globals() | self.locals(),
-                class_definitions=self.members(),
-                typevars=dict(),
-                names=set(),
-            ),
-            use_future_annotations=True,
-            handle_function_bodies=True,
-            create_class_attributes=True,
-        )
-
-        return visitor.transform_module(updated_node)
-
-    def functions(self) -> dict[FunctionKey, FunctionAnnotation]:
-        # Select module level entities
-        df = self.traced[
-            self.traced[Column.CLASS_MODULE].isnull() & self.traced[Column.CLASS].isnull()
-        ]
-        d: dict[FunctionKey, FunctionAnnotation] = dict()
-
-        for name, group in df.groupby(
-            by=Column.FUNCNAME,
-            sort=False,
-        ):
-            param_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_PARAMETER]
-            params = [
-                cst.Param(
-                    name=cst.Name(value=v),
-                    annotation=_create_annotation(t),
-                )
-                for v, t in param_df[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False)
-            ]
-
-            returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
-            assert len(returns_df) == 1, f"Found multiple hints for function `{name}`: {returns_df}"
-            returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
-
-            key = FunctionKey.make(name=name, params=cst.Parameters(params))
-            value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
-
-            d[key] = value
-        return d
-
-    def methods(self):
-        # Select class level entities
-        df = self.traced[
-            self.traced[Column.CLASS_MODULE].notnull() & self.traced[Column.CLASS].notnull()
-        ]
-
-        d: dict[FunctionKey, FunctionAnnotation] = dict()
-
-        for (fname, _, cname), group in df.groupby(
-            [Column.FUNCNAME, Column.CLASS_MODULE, Column.CLASS],
-            sort=False,
-            dropna=False,
-        ):
-            param_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_PARAMETER]
-            params = [
-                cst.Param(
-                    name=cst.Name(value=v),
-                    annotation=_create_annotation(t),
-                )
-                for v, t in param_df[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False)
-            ]
-
-            if "self" not in param_df[Column.VARNAME]:
-                params.insert(0, cst.Param(name=cst.Name(value="self")))
-
-            returns_df = group[group[Column.CATEGORY] == TraceDataCategory.CALLABLE_RETURN]
-            if not returns_df.empty:
-                name = f"{cname}.{fname}"
-
-                assert (
-                    len(returns_df) == 1
-                ), f"Found multiple hints for method `{name}`: {returns_df}"
-                returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
-
-                key = FunctionKey.make(name=name, params=cst.Parameters(params))
-                value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
-
-                d[key] = value
-        return d
-
-    def globals(self) -> dict[str, cst.Annotation]:
-        df = self.traced[(self.traced[Column.CATEGORY] == TraceDataCategory.GLOBAL_VARIABLE)]
-        d: dict[str, cst.Annotation] = dict()
-
-        for vname, group in df.groupby(by=Column.VARNAME, sort=False, dropna=False):
-            assert len(group) == 1, f"Found multiple hints for {vname} - {group}"
-            d[vname] = _create_annotation(group[Column.VARTYPE].iloc[0])
-
-        return d
-
-    def locals(self) -> dict[str, cst.Annotation]:
-        df = self.traced[(self.traced[Column.CATEGORY] == TraceDataCategory.LOCAL_VARIABLE)]
-        d: dict[str, cst.Annotation] = dict()
-
-        for fname, group in df.groupby(by=Column.FUNCNAME, sort=False, dropna=False):
-            for cname, vname, vtype in group[
-                [Column.CLASS, Column.VARNAME, Column.VARTYPE]
-            ].itertuples(index=False):
-                name = f"{fname}.{vname}" if pd.isnull(cname) else f"{cname}.{fname}.{vname}"
-                d[name] = _create_annotation(vtype)
-
-        return d
-
-    def members(self) -> dict[str, cst.ClassDef]:
-        df = self.traced[self.traced[Column.CATEGORY] == TraceDataCategory.CLASS_MEMBER]
-        d: dict[str, cst.ClassDef] = dict()
-
-        for cname, group in df.groupby(by=Column.CLASS, sort=False, dropna=True):
-            hints: list[cst.BaseStatement] = list()
-            for vname, vtype in group[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False):
-                hints.append(
-                    cst.SimpleStatementLine(
-                        body=[
-                            cst.AnnAssign(
-                                target=cst.Name(value=vname), annotation=_create_annotation(vtype)
-                            )
-                        ]
-                    )
-                )
-
-            d[cname] = cst.ClassDef(name=cst.Name(cname), body=cst.IndentedBlock(body=hints))
-
-        return d
+from typegen.provider import AnnotationProvider
 
 
 @dataclass
-class Targets:
+class _Targets:
     names: list[tuple[str, cst.Name]]
     attrs: list[tuple[str, cst.Attribute]]
 
 
-class TargetExtractor(cst.CSTVisitor):
-    targets: Targets
+class _TargetExtractor(cst.CSTVisitor):
+    targets: _Targets
 
     def __init__(self):
-        self.targets = Targets(list(), list())
+        self.targets = _Targets(list(), list())
 
     def visit_Attribute(self, node: cst.Attribute) -> bool | None:
         self.targets.attrs.append((node.attr.value, node))
@@ -194,18 +43,14 @@ class TargetExtractor(cst.CSTVisitor):
 
 def _find_targets(
     node: cst.Assign | cst.AnnAssign | cst.AugAssign,
-) -> Targets:
-    extractor = TargetExtractor()
+) -> _Targets:
+    extractor = _TargetExtractor()
     if isinstance(node, cst.AnnAssign | cst.AugAssign):
         node.target.visit(extractor)
     else:
         for target in node.targets:
             target.visit(extractor)
     return extractor.targets
-
-
-def _create_annotation_from_vartype(vartype: str) -> cst.Annotation:
-    return cst.Annotation(annotation=cst.parse_expression(vartype))
 
 
 class PyTypesTypeHintApplier(AnnotationProvider):
@@ -284,7 +129,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
 
     def _get_trace_for_targets(
         self, node: cst.Assign | cst.AnnAssign | cst.AugAssign
-    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Targets]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, _Targets]:
         """
         Fetches trace data for the targets from the given assignment statement.
         Return order is (global variables, local variables, class attributes, targets)
@@ -494,7 +339,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             self.logger.info(
                 f"Applying return type hint '{rettype}' to '{original_node.name.value}'"
             )
-            returns = _create_annotation_from_vartype(rettype)
+            returns = self._create_annotation(rettype)
 
         return updated_node.with_changes(returns=returns)
 
@@ -522,7 +367,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
         assert argtype is not None
 
         self.logger.info(f"Applying hint '{argtype}' to parameter '{original_node.name.value}'")
-        return updated_node.with_changes(annotation=_create_annotation_from_vartype(argtype))
+        return updated_node.with_changes(annotation=self._create_annotation(argtype))
 
     def leave_AugAssign(
         self, original_node: cst.AugAssign, updated_node: cst.AugAssign
@@ -548,7 +393,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             hinted_targets.append(
                 cst.AnnAssign(
                     target=var,
-                    annotation=_create_annotation_from_vartype(vartype=hint),
+                    annotation=self._create_annotation(vartype=hint),
                     value=None,
                 )
             )
@@ -596,7 +441,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             hinted_targets.append(
                 cst.AnnAssign(
                     target=var,
-                    annotation=_create_annotation_from_vartype(hint_ty),
+                    annotation=self._create_annotation(hint_ty),
                     value=None,
                 )
             )
@@ -654,7 +499,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             # Replace simple assignment with annotated assignment
             return updated_node.with_changes(
                 target=original_node.target,
-                annotation=_create_annotation_from_vartype(hint_ty),
+                annotation=self._create_annotation(hint_ty),
                 value=original_node.value,
             )
 

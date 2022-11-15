@@ -28,8 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 class TracerBase(abc.ABC):
-    """Base class for all Tracers. If more tracers need to be implemented, this class should be inherited from 
+    """Base class for all Tracers. If more tracers need to be implemented, this class should be inherited from
     and the abstract method is to be implemented"""
+
     def __init__(
         self,
         proj_path: pathlib.Path,
@@ -38,14 +39,12 @@ class TracerBase(abc.ABC):
     ):
         """
         Construct instance with provided paths.
-        
+
         :param proj_path: Path to project's directory that shall be traced
         :param stdlib_path: Path to standard library's directory of the Python binary used to run the project's tests
         :param venv_path: Path to project's virtual environment's directory used to run the project's tests
         """
-        self.trace_data = pd.DataFrame(columns=Schema.TraceData.keys()).astype(
-            Schema.TraceData
-        )
+        self.trace_data = pd.DataFrame(columns=Schema.TraceData.keys()).astype(Schema.TraceData)
 
         self.proj_path = proj_path
         self.stdlib_path = stdlib_path
@@ -74,7 +73,7 @@ class TracerBase(abc.ABC):
     def start_trace(self: "TracerBase") -> None:
         """Starts the trace by calling `sys.settrace` and backing-up the previous one.
         All Python code run after this will now be traced.
-        
+
         :param self: An instance of a deriving class"""
         logger.info("Starting trace")
         self._old_trace = sys.gettrace()
@@ -85,7 +84,7 @@ class TracerBase(abc.ABC):
     def active_trace(self: "TracerBase") -> typing.Iterator[None]:
         """Wrapper around the `start_trace` and `stop_trace` methods for with statements.
         Python code run after this will no longer be traced.
-        
+
         :param self: An instance of a deriving class"""
         self.start_trace()
         try:
@@ -125,6 +124,7 @@ class NoOperationTracer(TracerBase):
     Tracer that does nothing except be invoked whenever a tracing-related event is emitted.
     Used to provide benchmarking, i.e. to measure the overhead by the "real" Tracer
     """
+
     def _on_trace_is_called(self, frame, event, arg: typing.Any) -> typing.Callable:
         return self._on_trace_is_called
 
@@ -134,17 +134,18 @@ class Tracer(TracerBase):
     Tracer that is invoked everytime a tracing-related event is emitted.
     Traces and stores information about each instance in a DataFrame using `BatchTraceUpdate`
     """
+
     def __init__(
         self,
         proj_path: pathlib.Path,
         stdlib_path: pathlib.Path,
         venv_path: pathlib.Path,
-        apply_opts: bool=False,
+        apply_opts: bool = False,
     ):
         """
         Construct instance with provided paths.
         Additionally accepts an extra argument that indicates whether optimisations should be enabled
-        
+
         :param proj_path: Path to project's directory that shall be traced
         :param stdlib_path: Path to standard library's directory of the Python binary used to run the project's tests
         :param venv_path: Path to project's virtual environment's directory used to run the project's tests
@@ -166,13 +167,13 @@ class Tracer(TracerBase):
 
     def _update_optimisations(self, fwm: FrameWithMetadata) -> None:
         """Remove optimisations that are marked as TriggerStatus.EXITED, and insert new ones as needed."""
-                # Remove dead optimisations
+        # Remove dead optimisations
         while self.optimisation_stack:
             top = self.optimisation_stack[-1]
             if top.status() == TriggerStatus.EXITED:
-                #logger.debug(
+                # logger.debug(
                 #    f"Removing {self.optimisation_stack[-1].__class__.__name__} from optimisations"
-                #)
+                # )
                 self.optimisation_stack.pop()
             else:
                 break
@@ -183,9 +184,9 @@ class Tracer(TracerBase):
             self.optimisation_stack[-1], TypeStableLoop
         ):
             if fwm.is_for_loop():
-                #logger.debug(
+                # logger.debug(
                 #    f"Applying TypeStableLoop for {inspect.getframeinfo(fwm._frame)}"
-                #)
+                # )
                 tsl = TypeStableLoop(fwm)
                 if not self.optimisation_stack or tsl != self.optimisation_stack[-1]:
                     self.optimisation_stack.append(tsl)
@@ -206,10 +207,10 @@ class Tracer(TracerBase):
 
         return batch.parameters(names2types)
 
-    def _on_return(
-        self, frame, arg: typing.Any, batch: TraceBatch
-    ) -> TraceBatch:
+    def _on_return(self, frame, arg: typing.Any, batch: TraceBatch) -> TraceBatch:
         code = frame.f_code
+
+        # This is fine, we only want to "normal" name
         function_name = code.co_name
 
         modname = self._resolver.get_module_and_name(type(arg))
@@ -219,11 +220,9 @@ class Tracer(TracerBase):
 
         return batch.returns(names2types)
 
-    def _on_line(
-        self, frame, real_line_number: int, batch: TraceBatch
-    ) -> TraceBatch:
+    def _on_line(self, frame, real_line_number: int, batch: TraceBatch) -> TraceBatch:
         local_names2types = self._get_new_defined_variables_with_types(
-            self.old_local_vars[frame.f_code.co_name],
+            self.old_local_vars[_sanitize_fqualname(frame.f_code.co_qualname)],
             frame.f_locals,
         )
         with_local = batch.local_variables(
@@ -238,9 +237,7 @@ class Tracer(TracerBase):
 
         return with_global
 
-    def _on_class_function_return(
-        self, frame, batch: TraceBatch
-    ) -> TraceBatch:
+    def _on_class_function_return(self, frame, batch: TraceBatch) -> TraceBatch:
         """Updates the trace data with the members of the class object."""
         first_element_name = next(iter(frame.f_locals), None)
         if first_element_name is None:
@@ -274,12 +271,11 @@ class Tracer(TracerBase):
 
             # Tracing has been toggled off for this line now, simply return
             if any(
-                opt.status() in Optimisation.OPTIMIZING_STATES
-                for opt in self.optimisation_stack
+                opt.status() in Optimisation.OPTIMIZING_STATES for opt in self.optimisation_stack
             ):
                 return self._on_trace_is_called
 
-        function_name = frame.f_code.co_name
+        function_name = _sanitize_fqualname(frame.f_code.co_qualname)
         enclosing_class = _get_class_in_frame(frame)
 
         if enclosing_class is not None:
@@ -293,7 +289,7 @@ class Tracer(TracerBase):
         file_name = file_name.relative_to(self.proj_path)
         line_number = frame.f_lineno
 
-        frameinfo = inspect.getframeinfo(frame)
+        # frameinfo = inspect.getframeinfo(frame)
 
         batch = TraceBatch(
             file_name=file_name,
@@ -304,7 +300,7 @@ class Tracer(TracerBase):
         )
 
         if event == "call":
-            #logger.info(f"Tracing call: {frameinfo}")
+            # logger.info(f"Tracing call: {frameinfo}")
 
             # Add to storage
             self.old_local_vars[function_name] = dict()
@@ -314,7 +310,7 @@ class Tracer(TracerBase):
             batch = self._on_call(frame, batch)
 
         elif event == "return":
-            #logger.info(f"Tracing return: {frameinfo}")
+            # logger.info(f"Tracing return: {frameinfo}")
 
             # Catch locals and globals that are changed on last line
             line_number = self._prev_line[-1]
@@ -333,7 +329,7 @@ class Tracer(TracerBase):
 
         elif event == "line":
             line_number, self._prev_line[-1] = self._prev_line[-1], line_number
-            #logger.info(f"Tracing line: {frameinfo}")
+            # logger.info(f"Tracing line: {frameinfo}")
             batch = self._on_line(frame, line_number, batch)
 
         self._update_trace_data_with(batch)
@@ -354,9 +350,9 @@ class Tracer(TracerBase):
         batch_df = batch_update.to_frame()
         if batch_df.empty:
             return
-        self.trace_data = pd.concat(
-            [self.trace_data, batch_df], ignore_index=True
-        ).astype(Schema.TraceData)
+        self.trace_data = pd.concat([self.trace_data, batch_df], ignore_index=True).astype(
+            Schema.TraceData
+        )
 
     def _get_new_defined_variables_with_types(
         self,
@@ -384,6 +380,9 @@ class Tracer(TracerBase):
 
 def _get_class_in_frame(frame) -> type | None:
     code = frame.f_code
+
+    # This is intentionally not the qualname, as we are checking
+    # for attributes on the class instance
     function_name = code.co_name
     all_possible_classes = filter(inspect.isclass, frame.f_globals.values())
     for possible_class in all_possible_classes:
@@ -396,3 +395,7 @@ def _get_class_in_frame(frame) -> type | None:
                 return possible_class
 
     return None
+
+
+def _sanitize_fqualname(qname: str) -> str:
+    return qname.replace(".<locals>.", ".")

@@ -22,23 +22,17 @@ class MinThresholdFilter(TraceDataFilter):
             .count()
             .reset_index(name=MinThresholdFilter.COUNT_COLUMN)
         )
-        joined_trace_data = pd.merge(
-            trace_data, grouped_trace_data, on=subset, how="inner"
-        )
+        joined_trace_data = pd.merge(trace_data, grouped_trace_data, on=subset, how="inner")
         subset.remove(Column.VARTYPE_MODULE)
         subset.remove(Column.VARTYPE)
 
         grouped_trace_data = (
-            joined_trace_data.groupby(subset, dropna=False)[
-                MinThresholdFilter.COUNT_COLUMN
-            ]
+            joined_trace_data.groupby(subset, dropna=False)[MinThresholdFilter.COUNT_COLUMN]
             .max()
             .reset_index(name=MinThresholdFilter.MAX_COUNT_COLUMN)
         )
 
-        joined_trace_data = pd.merge(
-            joined_trace_data, grouped_trace_data, on=subset, how="inner"
-        )
+        joined_trace_data = pd.merge(joined_trace_data, grouped_trace_data, on=subset, how="inner")
 
         indices = (
             joined_trace_data[MinThresholdFilter.COUNT_COLUMN]

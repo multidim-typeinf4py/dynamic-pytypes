@@ -9,6 +9,8 @@ import libcst.codemod as codemod
 from constants import CONFIG_FILE_NAME
 
 from common import ptconfig
+from typegen.provider import cstimpl
+from typegen.provider import pytypes
 
 from .unification import TraceDataFilter
 from .unification.drop_dupes import DropDuplicatesFilter
@@ -24,8 +26,6 @@ from .strategy import AnnotationGenStratApplier
 
 from .strategy.stub import StubFileGenerator
 from .strategy.inline import BruteInlineGenerator, RetentiveInlineGenerator
-
-from .strategy.hinter import LibCSTTypeHintApplier, PyTypesTypeHintApplier
 
 from typegen.trace_data_file_collector import TraceDataFileCollector, DataFileCollector
 
@@ -87,12 +87,14 @@ __all__ = [
     "--impl",
     help="Select an implementation for interpreting the traced data during hinting",
     type=click.Choice(
-        [LibCSTTypeHintApplier.ident, PyTypesTypeHintApplier.ident], case_sensitive=False
+        [cstimpl.LibCSTTypeHintApplier.ident, pytypes.PyTypesTypeHintApplier.ident],
+        case_sensitive=False,
     ),
     callback=lambda ctx, _, val: {
-        LibCSTTypeHintApplier.ident: LibCSTTypeHintApplier,
-        PyTypesTypeHintApplier.ident: PyTypesTypeHintApplier,
+        cstimpl.LibCSTTypeHintApplier.ident: cstimpl.LibCSTTypeHintApplier,
+        pytypes.PyTypesTypeHintApplier.ident: pytypes.PyTypesTypeHintApplier,
     }[val],
+    default=cstimpl.LibCSTTypeHintApplier.ident,
 )
 @click.option(
     "-v",

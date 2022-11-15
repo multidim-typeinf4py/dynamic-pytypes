@@ -36,9 +36,7 @@ class TypeStableLoop(Optimisation):
     def advance(self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame):
         # Early exit conditions: Encountering break or return
         if current_frame.is_break() or current_frame.is_return():
-            logger.debug(
-                f"{TypeStableLoop.__name__}: {self._status} -> EXITED: break or return"
-            )
+            logger.debug(f"{TypeStableLoop.__name__}: {self._status} -> EXITED: break or return")
             self._status = TriggerStatus.EXITED
             return
 
@@ -71,19 +69,13 @@ class TypeStableLoop(Optimisation):
             self._status = TriggerStatus.ONGOING
 
         if current_frame.f_lineno > self._relevant_lines[1]:
-            logger.debug(
-                f"{TypeStableLoop.__name__}: {self._status} -> EXITED due to leaving loop"
-            )
+            logger.debug(f"{TypeStableLoop.__name__}: {self._status} -> EXITED due to leaving loop")
             self._status = TriggerStatus.EXITED
 
-        logger.debug(
-            f"Iters since type changes is now {self._iterations_since_type_changes}"
-        )
+        logger.debug(f"Iters since type changes is now {self._iterations_since_type_changes}")
         logger.debug(f"Total iterations is now {self._total_iterations}")
 
-    def _when_inactive(
-        self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame
-    ) -> None:
+    def _when_inactive(self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame) -> None:
         # In the first iteration, update line range information
         if self._total_iterations == 0:
             begin, end = self._relevant_lines
@@ -113,15 +105,11 @@ class TypeStableLoop(Optimisation):
                 else:
                     self._iterations_since_type_changes += 1
 
-    def _when_entry(
-        self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame
-    ) -> None:
+    def _when_entry(self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame) -> None:
         if self._is_loop_head(current_frame):
             self._iterations_since_type_changes += 1
 
-    def _when_ongoing(
-        self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame
-    ) -> None:
+    def _when_ongoing(self, current_frame: utils.FrameWithMetadata, traced: pd.DataFrame) -> None:
         if self._is_loop_head(current_frame):
             self._iterations_since_type_changes += 1
 

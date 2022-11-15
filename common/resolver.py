@@ -36,7 +36,7 @@ def _attempt_module_lookup(
     return None
 
 
-@dataclass
+@dataclass(frozen=True)
 class Resolver:
     """
     Bidirectional lookup of types and modules
@@ -65,6 +65,7 @@ class Resolver:
             raise ValueError(f"Could not find site-packages directory at {site_packages}")
         return site_packages
 
+    # @functools.lru_cache(maxsize=1024)
     def type_lookup(
         self, module_name: str | None | pd._libs.missing.NAType, type_name: str
     ) -> type | None:
@@ -114,6 +115,7 @@ class Resolver:
             variable_type: type = functools.reduce(getattr, type_name.split("."), module)  # type: ignore
             return variable_type
 
+    # @functools.lru_cache(maxsize=1024)  # type: ignore
     def get_module_and_name(self, ty: type) -> tuple[str | None, str] | None:
         """Retrieve module path and qualified type name from a type.
         Fails if the type lies outside of the three paths specified in the constructor.

@@ -8,19 +8,11 @@ from evaluation.normalize_types import normalize_type
 
 root = pathlib.Path.cwd()
 relative_sample_folder_path = (
-    pathlib.Path("tests")
-    / "resource"
-    / "evaluation"
-    / "file_type_hints_collector"
+    pathlib.Path("tests") / "resource" / "evaluation" / "file_type_hints_collector"
 )
 sample_folder_path = root / relative_sample_folder_path
 sample_data_folder_path = (
-    root
-    / "tests"
-    / "resource"
-    / "external"
-    / "PyTypes_BinaryFiles"
-    / "sample_typehint_data_files"
+    root / "tests" / "resource" / "external" / "PyTypes_BinaryFiles" / "sample_typehint_data_files"
 )
 
 
@@ -73,9 +65,7 @@ def test_file_type_hints_collector_returns_correct_data_for_folder():
     test_object = FileTypeHintsCollector()
     method_to_tests_to_test = [
         lambda: test_object.collect_data_from_folder(root, folder_path, False),
-        lambda: test_object.collect_data_from_folder(
-            sample_folder_path, folder_path, False
-        ),
+        lambda: test_object.collect_data_from_folder(sample_folder_path, folder_path, False),
     ]
     _test_with(
         [
@@ -94,9 +84,7 @@ def test_file_type_hints_collector_returns_correct_data_for_folder_including_sub
     test_object = FileTypeHintsCollector()
     method_to_tests_to_test = [
         lambda: test_object.collect_data_from_folder(root, folder_path, True),
-        lambda: test_object.collect_data_from_folder(
-            sample_folder_path, folder_path, True
-        ),
+        lambda: test_object.collect_data_from_folder(sample_folder_path, folder_path, True),
     ]
     _test_with(
         [
@@ -161,9 +149,7 @@ def _test_with(
             expected_data_filename, test_object, method_to_test, amount_rows
         )
 
-        actual_typehint_data = actual_typehint_data.drop(
-            Column.FILENAME, axis=1
-        )
+        actual_typehint_data = actual_typehint_data.drop(Column.FILENAME, axis=1)
         actual_data_elements.append(actual_typehint_data)
 
     for i, actual_typehint_data in enumerate(actual_data_elements):
@@ -181,9 +167,7 @@ def _test_and_get_actual_data(
 ) -> pd.DataFrame:
     expected_trace_data_file_path = sample_data_folder_path / expected_data_filename
     expected_typehint_data = pd.read_pickle(expected_trace_data_file_path)
-    expected_typehint_data = expected_typehint_data.astype(
-        Schema.TypeHintData
-    )
+    expected_typehint_data = expected_typehint_data.astype(Schema.TypeHintData)
 
     method_to_test()
     actual_typehint_data = test_object.typehint_data
@@ -192,9 +176,7 @@ def _test_and_get_actual_data(
 
     assert actual_typehint_data.shape[0] == amount_rows
 
-    merged_data = actual_typehint_data.merge(
-        expected_typehint_data, indicator="Merge", how="outer"
-    )
+    merged_data = actual_typehint_data.merge(expected_typehint_data, indicator="Merge", how="outer")
     merged_data = merged_data[merged_data["Merge"] != "both"]
     print("--- Difference ---")
     print(merged_data)

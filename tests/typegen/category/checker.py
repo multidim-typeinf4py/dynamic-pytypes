@@ -128,12 +128,12 @@ class ParameterHintChecker(cst.CSTVisitor):
             case metadata.GlobalScope():
                 assert any(
                     m.matches(node, fm) for fm in ParameterHintChecker.FUNCTION_MATCHERS
-                ), f"{self.__class__.__name__} - Failed to match function `{node.name.value}`"
+                ), f"{self.__class__.__name__} - Failed to match function `{node.name.value}` - {cst.Module([]).code_for_node(node.with_changes(body=cst.IndentedBlock(body=[])))}"
 
             case metadata.ClassScope():
                 assert any(
                     m.matches(node, fm) for fm in ParameterHintChecker.METHOD_MATCHERS
-                ), f"{self.__class__.__name__} - Failed to match method `{node.name.value}`"
+                ), f"{self.__class__.__name__} - Failed to match method `{node.name.value}` - {cst.Module([]).code_for_node(node.with_changes(body=cst.IndentedBlock(body=[])))}"
 
             case _:
                 assert False, f"Unexpected scope: {scope.__class__.__name__}"
@@ -178,20 +178,20 @@ class ReturnHintChecker(cst.CSTVisitor):
             case metadata.GlobalScope():
                 assert any(
                     m.matches(node, fm) for fm in ReturnHintChecker.FUNCTION_MATCHERS
-                ), f"{self.__class__.__name__} - Failed to match function `{node.name.value}`"
+                ), f"{self.__class__.__name__} - Failed to match function `{node.name.value}` - {cst.Module([]).code_for_node(node.with_changes(body=cst.IndentedBlock(body=[])))}"
 
             # Method
             case metadata.ClassScope():
                 assert any(
                     m.matches(node, fm) for fm in ReturnHintChecker.METHOD_MATCHERS
-                ), f"{self.__class__.__name__} - Failed to match method `{node.name.value}`"
+                ), f"{self.__class__.__name__} - Failed to match method `{node.name.value}` - {cst.Module([]).code_for_node(node.with_changes(body=cst.IndentedBlock(body=[])))}"
 
             case _:
                 assert False, f"Unexpected scope: {scope.__class__.__name__}"
 
 
 class AssignHintChecker(cst.CSTVisitor):
-    METADATA_DEPENDENCIES = (metadata.ScopeProvider,)
+    METADATA_DEPENDENCIES = (metadata.ScopeProvider, metadata.PositionProvider)
 
     V_MATCHER = m.AnnAssign(
         target=m.Name(value="v"),
@@ -270,4 +270,7 @@ class AssignHintChecker(cst.CSTVisitor):
         if m.matches(node, AssignHintChecker.ATTR_A_MATCHER):
             return False
 
-        raise AssertionError(f"Found unannotated Assign!: {cst.Module([]).code_for_node(node)}")
+        line = self.get_metadata(metadata.PositionProvider, node).start
+        raise AssertionError(
+            f"Found unannotated Assign!: {cst.Module([]).code_for_node(node)} on line {line}"
+        )

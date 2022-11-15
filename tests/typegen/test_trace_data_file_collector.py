@@ -3,7 +3,14 @@ import pandas as pd
 from constants import Column, Schema
 from typegen import TraceDataFileCollector
 
-cwd = pathlib.Path.cwd() / "tests" / "resource" / "external" / "PyTypes_BinaryFiles" / "sample_trace_data_files"
+cwd = (
+    pathlib.Path.cwd()
+    / "tests"
+    / "resource"
+    / "external"
+    / "PyTypes_BinaryFiles"
+    / "sample_trace_data_files"
+)
 
 
 def test_if_test_object_collects_generated_trace_data_in_folder_and_subfolders_and_keeps_files_it_returns_correct_trace_data():

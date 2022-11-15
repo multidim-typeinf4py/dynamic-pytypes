@@ -19,7 +19,7 @@ class DataFileCollector(ABC):
         self, path: pathlib.Path, include_also_files_in_subdirectories: bool = True
     ) -> None:
         """Collects the data in a given path.
-        :param path: The path of the folder containing the files. 
+        :param path: The path of the folder containing the files.
         :param include_also_files_in_subdirectories: Whether the data files in the subfolders should also be collected."""
         self.collected_data.clear()
         if include_also_files_in_subdirectories:
@@ -31,16 +31,12 @@ class DataFileCollector(ABC):
         sorted_potential_trace_data_file_paths = sorted(potential_trace_data_file_paths)
         for potential_trace_data_file_path in sorted_potential_trace_data_file_paths:
             try:
-                potential_data = self._on_potential_file_path_found(
-                    potential_trace_data_file_path
-                )
+                potential_data = self._on_potential_file_path_found(potential_trace_data_file_path)
                 if potential_data is not None:
                     self.collected_data.append(potential_data)
             except Exception as exception:
                 print(exception)
-                logger.error(
-                    f"Error encountered for file: {str(potential_trace_data_file_path)}"
-                )
+                logger.error(f"Error encountered for file: {str(potential_trace_data_file_path)}")
                 logger.error(exception)
                 continue
 

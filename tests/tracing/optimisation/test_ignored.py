@@ -8,6 +8,10 @@ from common import TraceDataCategory
 from tracing.tracer import Tracer
 from constants import Schema
 
+import pytest
+
+pytest.skip(reason="Ignore optimisation is dubious", allow_module_level=True)
+
 # NOTE: Ignored has been made defunct;
 # NOTE: the tracer will ignore the pathlib calls by itself
 
@@ -29,6 +33,7 @@ def call_to_standard_library():
 
 proj_path = pathlib.Path.cwd()
 import pathlib
+
 stdlib_path = pathlib.Path(pathlib.__file__).parent
 venv_path = pathlib.Path(os.environ["VIRTUAL_ENV"])
 

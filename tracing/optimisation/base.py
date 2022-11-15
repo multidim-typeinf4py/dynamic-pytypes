@@ -7,8 +7,8 @@ import pandas as pd
 
 
 class Optimisation(ABC):
-    """Base class for tracing-related optimisations. 
-    If more optimisations need to be made, this class should be inherited from 
+    """Base class for tracing-related optimisations.
+    If more optimisations need to be made, this class should be inherited from
     and the abstract methods are to be implemented"""
 
     OPTIMIZING_STATES = (TriggerStatus.ENTRY, TriggerStatus.ONGOING)
@@ -17,7 +17,7 @@ class Optimisation(ABC):
     def __init__(self, fwm: FrameWithMetadata):
         """
         Construct an Optimisation for a stack frame
-        
+
         :param fwm: The frame that originally activates the Optimisation
         """
         self.fwm = fwm

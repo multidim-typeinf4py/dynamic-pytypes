@@ -7,7 +7,7 @@ import pandas as pd
 
 class TraceDataFilter(abc.ABC):
     """Base class for different trace data filters.
-    
+
     To implement a new filter class, inherit from this class and overwrite the abstract methods."""
 
     _REGISTRY: dict[str, typing.Type["TraceDataFilter"]] = {}
@@ -17,9 +17,7 @@ class TraceDataFilter(abc.ABC):
         super().__init_subclass__(**kwargs)
         TraceDataFilter._REGISTRY[cls.ident] = cls
 
-    def __new__(
-        cls: typing.Type["TraceDataFilter"], /, ident: str, **kwargs
-    ) -> "TraceDataFilter":
+    def __new__(cls: typing.Type["TraceDataFilter"], /, ident: str, **kwargs) -> "TraceDataFilter":
         if (subcls := TraceDataFilter._REGISTRY.get(ident, None)) is not None:
             logging.debug(f"Creating {subcls.__name__} with {kwargs}")
             subinst = object.__new__(subcls)
@@ -37,15 +35,14 @@ class TraceDataFilter(abc.ABC):
 
         :param trace_data: The provided trace data to process.
         :returns: The processed trace data.
-        
+
         """
         pass
 
     @property
     @abc.abstractmethod
-    def ident(self): 
-        """Human-readable unique identifier amongst derivates of `TraceDataFilter`
-        """
+    def ident(self):
+        """Human-readable unique identifier amongst derivates of `TraceDataFilter`"""
         pass
 
 

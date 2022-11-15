@@ -109,9 +109,10 @@ class TraceBatch:
         :returns: A reference to newly updated batch
         """
         if override is not None:
-            assert (
-                override.line_number is None
-            ), f"Cannot specify `line_number` twice in {self.local_variables.__name__}; Found {line_number=} as an argument, and {override.line_number=} as an override"
+            assert override.line_number is None, (
+                f"Cannot specify `line_number` twice in {self.local_variables.__name__};"
+                "Found {line_number=} as an argument, and {override.line_number=} as an override"
+            )
 
         override = override or TraceUpdateOverride()
         override.line_number = override.line_number or line_number
@@ -251,15 +252,13 @@ class TraceBatch:
                 Column.VARTYPE_MODULE: vartype_modules,
                 Column.VARTYPE: vartypes,
             }
-            update_df = pd.DataFrame(
-                update_dict, columns=Schema.TraceData.keys()
-            ).astype(Schema.TraceData)
+            update_df = pd.DataFrame(update_dict, columns=Schema.TraceData.keys()).astype(
+                Schema.TraceData
+            )
             updates.append(update_df)
 
         if not updates:
-            return pd.DataFrame(columns=Schema.TraceData.keys()).astype(
-                Schema.TraceData
-            )
+            return pd.DataFrame(columns=Schema.TraceData.keys()).astype(Schema.TraceData)
 
         return pd.concat(updates, ignore_index=True).astype(Schema.TraceData)
 

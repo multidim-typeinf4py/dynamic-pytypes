@@ -4,8 +4,9 @@ import libcst.codemod as codemod
 import libcst.metadata as metadata
 
 import pandas as pd
+from typegen.provider import AnnotationProvider
+from typegen.provider.cstimpl import LibCSTTypeHintApplier
 
-from typegen.strategy import hinter
 from typegen.strategy import remover
 from typegen.strategy import inline
 
@@ -29,12 +30,15 @@ import difflib
 )
 @pytest.mark.parametrize(
     argnames=["provider"],
-    argvalues=[(hinter.LibCSTTypeHintApplier,), (hinter.PyTypesTypeHintApplier,)],
+    argvalues=[
+        (LibCSTTypeHintApplier,),
+        # (hinter.PyTypesTypeHintApplier,)
+    ],
 )
 def test_category_hinting(
     typed: cst.Module,
     traced: pd.DataFrame,
-    provider: typing.Type[hinter.AnnotationProvider],
+    provider: typing.Type[AnnotationProvider],
     chckr: cst.CSTVisitor,
     rmvr: cst.CSTTransformer,
 ):
