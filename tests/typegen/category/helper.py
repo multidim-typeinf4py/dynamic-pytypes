@@ -6,9 +6,7 @@ import libcst as cst
 import pandas as pd
 import pytest
 
-from common import Resolver
 from tracing.batch import TraceBatch, TraceUpdateOverride
-
 
 
 @pytest.fixture
@@ -105,10 +103,10 @@ def traced() -> pd.DataFrame:
             file_name=pathlib.Path("x.py"),
             class_module="x",
             class_name="Clazz",
-            function_name="__init__",
+            function_name="Clazz.__init__",
             line_number=14,
         )
-        .parameters({"a": (None, int.__name__)})
+        .parameters({"self": ("x", "Class"), "a": (None, int.__name__)})
         .members(names2types={"a": (None, "int")}, override=TraceUpdateOverride(line_number=15))
         .returns({"__init__": (None, "None")})
         .to_frame()
@@ -119,11 +117,12 @@ def traced() -> pd.DataFrame:
             file_name=pathlib.Path("x.py"),
             class_module="x",
             class_name="Clazz",
-            function_name="method",
+            function_name="Clazz.method",
             line_number=17,
         )
         .parameters(
             {
+                "self": ("x", "Class"),
                 "a": (None, int.__name__),
                 "b": (None, str.__name__),
                 "c": (None, int.__name__),
@@ -138,11 +137,12 @@ def traced() -> pd.DataFrame:
             file_name=pathlib.Path("x.py"),
             class_module="x",
             class_name="Clazz",
-            function_name="multiline_method",
+            function_name="Clazz.multiline_method",
             line_number=20,
         )
         .parameters(
             {
+                "self": ("x", "Class"),
                 "a": (None, str.__name__),
                 "b": (None, int.__name__),
                 "c": (None, str.__name__),
@@ -157,10 +157,10 @@ def traced() -> pd.DataFrame:
             file_name=pathlib.Path("x.py"),
             class_module="x",
             class_name="Clazz",
-            function_name="function",
+            function_name="Clazz.function",
             line_number=27,
         )
-        .parameters({"a": (None, "A"), "b": (None, "B"), "c": (None, "C")})
+        .parameters({"self": ("x", "Class"), "a": (None, "A"), "b": (None, "B"), "c": (None, "C")})
         .returns(names2types={"function": (None, int.__name__)})
         .local_variables(line_number=29, names2types={"v": (None, str.__name__)})
         .to_frame()
@@ -177,7 +177,7 @@ def traced() -> pd.DataFrame:
         .local_variables(
             line_number=1,
             names2types={"v": (None, str.__name__)},
-            override=TraceUpdateOverride(function_name="function"),
+            override=TraceUpdateOverride(function_name="Clazz.function"),
         )
         .local_variables(
             line_number=10,
@@ -188,7 +188,7 @@ def traced() -> pd.DataFrame:
             line_number=26,
             names2types={"v": (None, str.__name__)},
             override=TraceUpdateOverride(
-                class_module="x", class_name="Clazz", function_name="function"
+                class_module="x", class_name="Clazz", function_name="Clazz.function"
             ),
         )
         .global_variables(
