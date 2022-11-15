@@ -251,15 +251,13 @@ class TraceBatch:
                 Column.VARTYPE_MODULE: vartype_modules,
                 Column.VARTYPE: vartypes,
             }
-            update_df = pd.DataFrame(
-                update_dict, columns=Schema.TraceData.keys()
-            ).astype(Schema.TraceData)
+            update_df = pd.DataFrame(update_dict, columns=Schema.TraceData.keys()).astype(
+                Schema.TraceData
+            )
             updates.append(update_df)
 
         if not updates:
-            return pd.DataFrame(columns=Schema.TraceData.keys()).astype(
-                Schema.TraceData
-            )
+            return pd.DataFrame(columns=Schema.TraceData.keys()).astype(Schema.TraceData)
 
         return pd.concat(updates, ignore_index=True).astype(Schema.TraceData)
 

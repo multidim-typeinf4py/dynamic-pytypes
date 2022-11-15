@@ -29,8 +29,9 @@ import difflib
 )
 @pytest.mark.parametrize(
     argnames=["provider"],
-    argvalues=[(hinter.LibCSTTypeHintApplier,), 
-    # (hinter.PyTypesTypeHintApplier,)
+    argvalues=[
+        (hinter.LibCSTTypeHintApplier,),
+        # (hinter.PyTypesTypeHintApplier,)
     ],
 )
 def test_category_hinting(

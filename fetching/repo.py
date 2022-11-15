@@ -15,8 +15,8 @@ from .projio import Project
 
 
 class Repository(ABC):
-    """Base class for facilitating fetching of resources for tracing
-    """
+    """Base class for facilitating fetching of resources for tracing"""
+
     def __init__(self, project_uri: str):
         """Construct an instance with an URI to the requested resource,
         should be called from deriving classes
@@ -75,9 +75,7 @@ class Repository(ABC):
         """
         pass
 
-    def _write_to(
-        self, intermediary: tempfile.TemporaryDirectory, output: pathlib.Path
-    ):
+    def _write_to(self, intermediary: tempfile.TemporaryDirectory, output: pathlib.Path):
         """Private method for handling the writing of the fetched resource,
         and any intermediate operations that may have performed, to the correct location
 
@@ -92,6 +90,7 @@ class Repository(ABC):
 
 class GitRepository(Repository):
     """Fetch Git Repositories from .git URIs"""
+
     def __init__(self, project_uri: str):
         super().__init__(project_uri)
         self.pbar: tqdm.tqdm | None = None
@@ -129,15 +128,13 @@ class GitRepository(Repository):
         self.pbar.desc = message
         self.pbar.refresh()
 
-    def _sentinel_progress(
-        self, _, cur_count: int, max_count: int, message: str
-    ) -> None:
+    def _sentinel_progress(self, _, cur_count: int, max_count: int, message: str) -> None:
         return None
 
 
 class ArchiveRepository(Repository):
-    """Fetch archives from specified URI 
-    """
+    """Fetch archives from specified URI"""
+
     def __init__(self, project_uri: str):
         super().__init__(project_uri)
 
@@ -187,9 +184,10 @@ class ArchiveRepository(Repository):
 
 
 class LocalFolder(Repository):
-    """Use local folders as a basis for a resource. 
-    Useful if you want to trace smaller projects or private ones, etc. 
+    """Use local folders as a basis for a resource.
+    Useful if you want to trace smaller projects or private ones, etc.
     """
+
     fmt = "Local"
 
     def __init__(self, filepath: str):

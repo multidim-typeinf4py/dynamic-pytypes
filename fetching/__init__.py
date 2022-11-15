@@ -28,7 +28,9 @@ ORIGINAL_REPOSITORY_FOLDER_NAME = "Original"
 @click.option(
     "-f",
     "--format",
-    type=click.Choice([GitRepository.fmt, ArchiveRepository.fmt, LocalFolder.fmt], case_sensitive=False),
+    type=click.Choice(
+        [GitRepository.fmt, ArchiveRepository.fmt, LocalFolder.fmt], case_sensitive=False
+    ),
     help="Indicate repository format explicitly",
     required=False,
     default=None,
@@ -58,8 +60,6 @@ ORIGINAL_REPOSITORY_FOLDER_NAME = "Original"
     required=False,
     default=False,
 )
-
-
 def main(**params):
     url, fmt, out, verb, notraverse, evaluate = (
         params["uri"],
@@ -67,7 +67,7 @@ def main(**params):
         params["output"],
         params["verbose"],
         params["no_traverse"],
-        params["eval"]
+        params["eval"],
     )
     logging.basicConfig(level=verb)
 
@@ -90,4 +90,3 @@ def main(**params):
 
     except Exception as e:
         print(f"{e}")
-

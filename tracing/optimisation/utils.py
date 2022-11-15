@@ -9,6 +9,7 @@ import tokenize
 @dataclass
 class FrameWithMetadata:
     """A wrapper dataclass that takes the current frame and checks properties of the frame's state"""
+
     _frame: typing.Any
 
     @functools.cached_property

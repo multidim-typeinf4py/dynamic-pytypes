@@ -4,6 +4,7 @@ from evaluation.metric_data_calculator import MetricDataCalculator
 from evaluation.metric_data_calculator import get_total_completeness_and_correctness
 from constants import Schema
 
+
 def get_sample_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     sample_original_data = pd.DataFrame(columns=Schema.TypeHintData.keys())
     sample_original_data.loc[len(sample_original_data.index)] = [
@@ -155,7 +156,7 @@ def test_metric_calculator_returns_correct_metric_data():
         float.__name__,
         None,
         False,
-        False
+        False,
     ]
     expected_data.loc[len(expected_data.index)] = [
         "sample_original_filename",

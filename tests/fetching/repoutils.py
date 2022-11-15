@@ -11,8 +11,10 @@ def create_repo(project_name: str) -> pathlib.Path:
 
     return repo_path
 
+
 def delete_repo(p: pathlib.Path):
     _delete_tree(p)
+
 
 def _delete_tree(p: pathlib.Path):
     if p.is_file():

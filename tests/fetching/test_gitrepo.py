@@ -24,7 +24,9 @@ def test_pandas_repo_is_git():
     pandas_path = repoutils.create_repo("pandas-git")
 
     np_repo = fetching.Repository.factory(r"https://github.com/pandas-dev/pandas.git")
-    assert isinstance(np_repo, fetching.GitRepository), f"Failed to detect pandas GitHub URL as such"
+    assert isinstance(
+        np_repo, fetching.GitRepository
+    ), f"Failed to detect pandas GitHub URL as such"
 
     np_repo.fetch(pandas_path)
 

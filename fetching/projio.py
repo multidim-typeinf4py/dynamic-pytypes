@@ -37,10 +37,8 @@ class Project:
         yield from (
             pathlib.Path("tests"),
             pathlib.Path(self.root.name) / "tests",
-
             pathlib.Path("test"),
             pathlib.Path(self.root.name) / "test",
-
             pathlib.Path("testing"),
             pathlib.Path(self.root.name) / "testing",
         )

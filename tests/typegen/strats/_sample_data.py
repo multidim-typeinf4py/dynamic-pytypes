@@ -19,7 +19,7 @@ def get_test_data():
         get_test_data_existing_type_hints,
         get_test_data_attribute,
         get_test_data_union_import,
-        get_test_data_global_hinting
+        get_test_data_global_hinting,
     ]
 
     returned_data = []
@@ -658,9 +658,7 @@ def another_one() -> None: ...
 
 
 def get_test_data_existing_type_hints():
-    resource_path = pathlib.Path(
-        "tests", "resource", "typegen", "file_with_existing_type_hints.py"
-    )
+    resource_path = pathlib.Path("tests", "resource", "typegen", "file_with_existing_type_hints.py")
 
     sample_trace_data = pd.DataFrame(columns=Schema.TraceData.keys())
     class_module = "tests.resource.typegen.file_with_existing_type_hints"
@@ -912,6 +910,7 @@ def stringify(a: Union[int, str, Path]) -> str: ...
         expected_stub_content,
     )
 
+
 def get_test_data_global_hinting():
     resource_path = pathlib.Path("tests", "resource", "typegen", "glbls.py")
     sample_trace_data = pd.DataFrame(columns=Schema.TraceData.keys())
@@ -1049,5 +1048,5 @@ def main() -> None: ...
         sample_trace_data,
         expected_inline_content,
         expected_eval_inline_content,
-        expected_stub_content
+        expected_stub_content,
     )

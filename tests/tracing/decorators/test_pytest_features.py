@@ -11,9 +11,7 @@ MOCK_PATH = pathlib.Path.cwd()
 
 @pytest.fixture
 def cfg(monkeypatch) -> ptconfig.TomlCfg:
-    monkeypatch.setattr(
-        pathlib.Path, pathlib.Path.cwd.__name__, lambda: MOCK_PATH.resolve()
-    )
+    monkeypatch.setattr(pathlib.Path, pathlib.Path.cwd.__name__, lambda: MOCK_PATH.resolve())
     monkeypatch.setattr(
         ptconfig,
         ptconfig.load_config.__name__,

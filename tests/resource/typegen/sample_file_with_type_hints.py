@@ -4,7 +4,8 @@ class A:
 
     def a(self, b: int) -> str:
         c: bool = True
-        b: int; b += 1
+        b: int
+        b += 1
         return "string"
 
 

@@ -27,9 +27,7 @@ def generate_cfg(
     stdlib = (stdlib or pathlib.Path(pathlib.__file__).parent).resolve()
     venv = (venv or pathlib.Path(os.environ["VIRTUAL_ENV"])).resolve()
 
-    assert not stdlib.is_relative_to(
-        project
-    ), "stdlib must be outside of project folder"
+    assert not stdlib.is_relative_to(project), "stdlib must be outside of project folder"
     assert not venv.is_relative_to(project), "venv must be outside of project folder"
 
     cfg = ptconfig.TomlCfg(

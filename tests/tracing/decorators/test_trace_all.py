@@ -18,9 +18,7 @@ MOCK_PATH = pathlib.Path("tests", "tracing", "decorators")
 
 
 def test_everything_is_traced(monkeypatch):
-    monkeypatch.setattr(
-        pathlib.Path, pathlib.Path.cwd.__name__, lambda: MOCK_PATH.resolve()
-    )
+    monkeypatch.setattr(pathlib.Path, pathlib.Path.cwd.__name__, lambda: MOCK_PATH.resolve())
     monkeypatch.setattr(
         ptconfig,
         ptconfig.load_config.__name__,
@@ -51,9 +49,7 @@ def test_everything_is_traced(monkeypatch):
 
 
 def test_everything_is_traced_with_benchmark_performance(monkeypatch):
-    monkeypatch.setattr(
-        pathlib.Path, pathlib.Path.cwd.__name__, lambda: MOCK_PATH.resolve()
-    )
+    monkeypatch.setattr(pathlib.Path, pathlib.Path.cwd.__name__, lambda: MOCK_PATH.resolve())
     monkeypatch.setattr(
         ptconfig,
         ptconfig.load_config.__name__,
@@ -74,9 +70,7 @@ def test_everything_is_traced_with_benchmark_performance(monkeypatch):
         "trace_function" in ftrace[Column.FUNCNAME].values
     ), f"Trace data for 'trace_function' is missing"
 
-    assert (
-        fperf is not None
-    ), f"When benchmarking, perf data 'fperf': should not be None"
+    assert fperf is not None, f"When benchmarking, perf data 'fperf': should not be None"
     assert fperf.shape == (4,), f"Wrong benchmark shape for 'fperf': Got {fperf.shape}"
 
     mtrace, mperf = decorators.dev_trace(Class().trace_method)()
@@ -85,7 +79,5 @@ def test_everything_is_traced_with_benchmark_performance(monkeypatch):
         Class.trace_method.__qualname__ in mtrace[Column.FUNCNAME].values
     ), f"Trace data for 'trace_method' is missing"
 
-    assert (
-        mperf is not None
-    ), f"When benchmarking, perf data 'mperf': should not be None"
+    assert mperf is not None, f"When benchmarking, perf data 'mperf': should not be None"
     assert mperf.shape == (4,), f"Wrong benchmark shape for 'mperf': Got {mperf.shape}"

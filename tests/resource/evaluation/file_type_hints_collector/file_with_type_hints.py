@@ -4,7 +4,9 @@ from pathlib import Path
 from pathlib import PosixPath, WindowsPath
 import numpy as np
 import evaluation
-from tests.resource.evaluation.file_type_hints_collector.sample_to_import import FileTypeHintsCollector
+from tests.resource.evaluation.file_type_hints_collector.sample_to_import import (
+    FileTypeHintsCollector,
+)
 from evaluation import FileTypeHintsCollector
 from tests.resource.evaluation.file_type_hints_collector import MetricDataCalculator
 from typing import Optional
@@ -12,6 +14,7 @@ from typing import Optional
 
 class MetricDataCalculator:
     pass
+
 
 from evaluation import MetricDataCalculator
 
@@ -28,13 +31,18 @@ class A:
         z: FileTypeHintsCollector = FileTypeHintsCollector()
 
     def function(self, a: pathlib.Path, b: Path) -> bool:
-        c: Optional[bool]; d = a == b, 10
+        c: Optional[bool]
+        d = a == b, 10
         e: dict[str, evaluation.FileTypeHintsCollector] = ...
         if True:
             e: int | [str] | [] | None = 12
         e: typing.Union[bool | np.ndarray, typing.Optional[str]] = False
-        f: object = None; g: float = 3.14
-        h: typing.Union[list[str], dict[None | evaluation.FileTypeHintsCollector, dict[float, Optional[bool | int]]]] = ...
+        f: object = None
+        g: float = 3.14
+        h: typing.Union[
+            list[str],
+            dict[None | evaluation.FileTypeHintsCollector, dict[float, Optional[bool | int]]],
+        ] = ...
         return c
 
 

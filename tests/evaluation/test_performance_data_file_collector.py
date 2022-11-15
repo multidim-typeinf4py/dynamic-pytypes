@@ -4,7 +4,14 @@ import constants
 from evaluation import PerformanceDataFileCollector
 
 
-cwd = pathlib.Path.cwd() / "tests" / "resource" / "external" / "PyTypes_BinaryFiles" / "sample_performance_data_files"
+cwd = (
+    pathlib.Path.cwd()
+    / "tests"
+    / "resource"
+    / "external"
+    / "PyTypes_BinaryFiles"
+    / "sample_performance_data_files"
+)
 
 sample1 = np.array([0.015, 0.23, 0.09702, 0.182])
 sample2 = np.array([-0.00103, -1.9701, 2.4912, 4.7])

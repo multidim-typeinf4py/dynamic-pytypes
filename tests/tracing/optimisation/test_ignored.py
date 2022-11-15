@@ -29,6 +29,7 @@ def call_to_standard_library():
 
 proj_path = pathlib.Path.cwd()
 import pathlib
+
 stdlib_path = pathlib.Path(pathlib.__file__).parent
 venv_path = pathlib.Path(os.environ["VIRTUAL_ENV"])
 

@@ -123,9 +123,7 @@ class UnifySubTypesFilter(TraceDataFilter):
                 logger.debug(f"Finishing MRO traversal; common base type is {modty}")
                 return modty
 
-        logger.debug(
-            "Finishing MRO traversal; there is no common base type except object"
-        )
+        logger.debug("Finishing MRO traversal; there is no common base type except object")
         return None
 
     def _get_type_and_mro(

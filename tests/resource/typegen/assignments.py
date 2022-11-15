@@ -9,7 +9,7 @@ s = set(range(10))
 l = list(range(10))
 
 
-# annotations in other chained and aug assignments are not (directly) supported 
+# annotations in other chained and aug assignments are not (directly) supported
 # solution: declare variable beforehand
 # a: float
 # b: int

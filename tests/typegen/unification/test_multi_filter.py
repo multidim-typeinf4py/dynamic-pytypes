@@ -16,6 +16,7 @@ from constants import Schema, Column
 proj_path = pathlib.Path.cwd()
 venv_path = pathlib.Path(os.environ["VIRTUAL_ENV"])
 import pathlib
+
 stdlib_path = pathlib.Path(pathlib.__file__).parent
 
 

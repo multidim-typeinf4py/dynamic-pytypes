@@ -26,7 +26,5 @@ class DropVariablesOfMultipleTypesFilter(TraceDataFilter):
         trace_data_with_dropped_variables = joined_trace_data[
             joined_trace_data["amount_types"] < self.min_amount_types_to_drop
         ]
-        processed_data = trace_data_with_dropped_variables.drop(
-            ["amount_types"], axis=1
-        )
+        processed_data = trace_data_with_dropped_variables.drop(["amount_types"], axis=1)
         return processed_data.reset_index(drop=True).astype(Schema.TraceData)
