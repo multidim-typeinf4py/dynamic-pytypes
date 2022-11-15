@@ -220,7 +220,7 @@ class Tracer(TracerBase):
 
     def _on_line(self, frame, real_line_number: int, batch: TraceBatch) -> TraceBatch:
         local_names2types = self._get_new_defined_variables_with_types(
-            self.old_local_vars[frame.f_code.co_qualname],
+            self.old_local_vars[_sanitize_fqualname(frame.f_code.co_qualname)],
             frame.f_locals,
         )
         with_local = batch.local_variables(
@@ -273,7 +273,7 @@ class Tracer(TracerBase):
             ):
                 return self._on_trace_is_called
 
-        function_name = frame.f_code.co_qualname
+        function_name = _sanitize_fqualname(frame.f_code.co_qualname)
         enclosing_class = _get_class_in_frame(frame)
 
         if enclosing_class is not None:
@@ -390,3 +390,9 @@ def _get_class_in_frame(frame) -> type | None:
                 return possible_class
 
     return None
+
+
+def _sanitize_fqualname(qname: str | None) -> str | None:
+    if qname is None:
+        return None
+    return qname.replace(".<locals>.", ".")

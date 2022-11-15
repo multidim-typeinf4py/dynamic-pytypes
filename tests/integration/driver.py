@@ -39,7 +39,8 @@ class Clazz:
 
 def outer_function() -> int:
     def nested_function(a: int) -> str:
-        return str(a)
+        result = str(a)
+        return result
 
     return int(nested_function(10))
 
