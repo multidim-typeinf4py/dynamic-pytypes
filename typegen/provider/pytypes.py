@@ -17,7 +17,7 @@ import pandas as pd
 from constants import Column
 from common.trace_data_category import TraceDataCategory
 
-from typegen.provider import AnnotationProvider, _create_annotation
+from typegen.provider import AnnotationProvider
 
 
 @dataclass
@@ -339,7 +339,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             self.logger.info(
                 f"Applying return type hint '{rettype}' to '{original_node.name.value}'"
             )
-            returns = _create_annotation(rettype)
+            returns = self._create_annotation(rettype)
 
         return updated_node.with_changes(returns=returns)
 
@@ -367,7 +367,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
         assert argtype is not None
 
         self.logger.info(f"Applying hint '{argtype}' to parameter '{original_node.name.value}'")
-        return updated_node.with_changes(annotation=_create_annotation(argtype))
+        return updated_node.with_changes(annotation=self._create_annotation(argtype))
 
     def leave_AugAssign(
         self, original_node: cst.AugAssign, updated_node: cst.AugAssign
@@ -393,7 +393,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             hinted_targets.append(
                 cst.AnnAssign(
                     target=var,
-                    annotation=_create_annotation(vartype=hint),
+                    annotation=self._create_annotation(vartype=hint),
                     value=None,
                 )
             )
@@ -441,7 +441,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             hinted_targets.append(
                 cst.AnnAssign(
                     target=var,
-                    annotation=_create_annotation(hint_ty),
+                    annotation=self._create_annotation(hint_ty),
                     value=None,
                 )
             )
@@ -499,7 +499,7 @@ class PyTypesTypeHintApplier(AnnotationProvider):
             # Replace simple assignment with annotated assignment
             return updated_node.with_changes(
                 target=original_node.target,
-                annotation=_create_annotation(hint_ty),
+                annotation=self._create_annotation(hint_ty),
                 value=original_node.value,
             )
 
