@@ -223,7 +223,7 @@ class Tracer(TracerBase):
         self, frame, real_line_number: int, batch: TraceBatch
     ) -> TraceBatch:
         local_names2types = self._get_new_defined_variables_with_types(
-            self.old_local_vars[frame.f_code.co_name],
+            self.old_local_vars[frame.f_code.co_qualname],
             frame.f_locals,
         )
         with_local = batch.local_variables(
@@ -279,7 +279,7 @@ class Tracer(TracerBase):
             ):
                 return self._on_trace_is_called
 
-        function_name = frame.f_code.co_name
+        function_name = frame.f_code.co_qualname
         enclosing_class = _get_class_in_frame(frame)
 
         if enclosing_class is not None:
