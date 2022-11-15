@@ -14,8 +14,7 @@ import pandas as pd
 
 from constants import Column
 from common.trace_data_category import TraceDataCategory
-from typegen.provider import AnnotationProvider, _create_annotation
-
+from typegen.provider import AnnotationProvider
 
 
 class LibCSTTypeHintApplier(AnnotationProvider):
@@ -76,7 +75,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
             params = [
                 cst.Param(
                     name=cst.Name(value=v),
-                    annotation=_create_annotation(t),
+                    annotation=self._create_annotation(t),
                 )
                 for v, t in param_df[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False)
             ]
@@ -85,7 +84,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
             if not len(returns_df):
                 continue
             assert len(returns_df) == 1, f"Found multiple hints for function `{name}`: {returns_df}"
-            returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
+            returns = self._create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
             key = FunctionKey.make(name=name, params=cst.Parameters(params))
             value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
@@ -110,7 +109,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
             params = [
                 cst.Param(
                     name=cst.Name(value=v),
-                    annotation=_create_annotation(t),
+                    annotation=self._create_annotation(t),
                 )
                 for v, t in param_df[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False)
             ]
@@ -122,7 +121,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
             assert (
                 len(returns_df) == 1
             ), f"Found multiple hints for method `{fname}`: {returns_df}"
-            returns = _create_annotation(returns_df[Column.VARTYPE].iloc[0])
+            returns = self._create_annotation(returns_df[Column.VARTYPE].iloc[0])
 
             key = FunctionKey.make(name=fname, params=cst.Parameters(params))
             value = FunctionAnnotation(parameters=cst.Parameters(params), returns=returns)
@@ -136,7 +135,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
 
         for vname, group in df.groupby(by=Column.VARNAME, sort=False, dropna=False):
             assert len(group) == 1, f"Found multiple hints for {vname} - {group}"
-            d[vname] = _create_annotation(group[Column.VARTYPE].iloc[0])
+            d[vname] = self._create_annotation(group[Column.VARTYPE].iloc[0])
 
         return d
 
@@ -147,7 +146,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
         for fname, group in df.groupby(by=Column.FUNCNAME, sort=False, dropna=False):
             for vname, vtype in group[[Column.VARNAME, Column.VARTYPE]].itertuples(index=False):
                 name = f"{fname}.{vname}"
-                d[name] = _create_annotation(vtype)
+                d[name] = self._create_annotation(vtype)
 
         return d
 
@@ -162,7 +161,7 @@ class LibCSTTypeHintApplier(AnnotationProvider):
                     cst.SimpleStatementLine(
                         body=[
                             cst.AnnAssign(
-                                target=cst.Name(value=vname), annotation=_create_annotation(vtype)
+                                target=cst.Name(value=vname), annotation=self._create_annotation(vtype)
                             )
                         ]
                     )

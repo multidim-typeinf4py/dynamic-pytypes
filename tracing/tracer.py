@@ -287,7 +287,7 @@ class Tracer(TracerBase):
         file_name = file_name.relative_to(self.proj_path)
         line_number = frame.f_lineno
 
-        frameinfo = inspect.getframeinfo(frame)
+        # frameinfo = inspect.getframeinfo(frame)
 
         batch = TraceBatch(
             file_name=file_name,

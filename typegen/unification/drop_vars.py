@@ -6,7 +6,8 @@ from constants import Column, Schema
 
 
 class DropVariablesOfMultipleTypesFilter(TraceDataFilter):
-    """Drops rows containing variables the amount of the corresponding types is higher or equal than the specified min amount."""
+    """Drops rows containing variables the amount of the corresponding types is 
+    higher or equal than the specified min amount."""
 
     ident = "drop_mult_var"
 

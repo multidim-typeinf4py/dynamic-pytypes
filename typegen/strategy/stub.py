@@ -3,7 +3,6 @@ import tempfile
 import typing
 
 from mypy import stubgen
-import pandas as pd
 import libcst as cst
 
 from . import AnnotationGeneratorStrategy
@@ -11,7 +10,8 @@ from .imports import AddImportTransformer
 
 
 class ImportUnionTransformer(cst.CSTTransformer):
-    """Transforms the CST by adding the ImportFrom node (from typing import Union) if the corresponding code contains a union type hint."""
+    """Transforms the CST by adding the ImportFrom node (from typing import Union)
+    if the corresponding code contains a union type hint."""
 
     def __init__(self):
         self.requires_union_import = False

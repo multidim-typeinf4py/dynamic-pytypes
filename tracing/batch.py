@@ -109,9 +109,10 @@ class TraceBatch:
         :returns: A reference to newly updated batch
         """
         if override is not None:
-            assert (
-                override.line_number is None
-            ), f"Cannot specify `line_number` twice in {self.local_variables.__name__}; Found {line_number=} as an argument, and {override.line_number=} as an override"
+            assert override.line_number is None, (
+                f"Cannot specify `line_number` twice in {self.local_variables.__name__};"
+                "Found {line_number=} as an argument, and {override.line_number=} as an override"
+            )
 
         override = override or TraceUpdateOverride()
         override.line_number = override.line_number or line_number

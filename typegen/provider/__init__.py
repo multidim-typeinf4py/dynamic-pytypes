@@ -6,8 +6,6 @@ import pandas as pd
 
 from constants import Column
 
-def _create_annotation(vartype: str) -> cst.Annotation:
-    return cst.Annotation(annotation=cst.parse_expression(vartype))
 
 class AnnotationProvider(codemod.ContextAwareTransformer):
     def __init__(self, context: codemod.CodemodContext, traced: pd.DataFrame) -> None:
@@ -18,3 +16,6 @@ class AnnotationProvider(codemod.ContextAwareTransformer):
             self.traced = traced
 
         self.logger = logging.getLogger(self.__class__.__qualname__)
+
+    def _create_annotation(vartype: str) -> cst.Annotation:
+        return cst.Annotation(annotation=cst.parse_expression(vartype))
